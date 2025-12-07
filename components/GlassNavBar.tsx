@@ -99,7 +99,7 @@ export default function GlassNavBar(): React.JSX.Element {
                                             <IconComponent
                                                 size={24}
                                                 color={isActive ? "#FF3B30" : "#000000"}
-                                                strokeWidth={isActive ? 2 : 2}
+                                                strokeWidth={isActive ? 1.9 : 1.5}
                                             />
                                             <Text style={[styles.navText, isActive && styles.activeNavText]}>
                                                 {item.label}

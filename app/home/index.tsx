@@ -182,6 +182,7 @@ export default function HomePage() {
                     />
                 </View>
 
+
             </ScrollView>
         </SafeAreaView>
     );
