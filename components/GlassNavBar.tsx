@@ -74,7 +74,7 @@ export default function GlassNavBar(): React.JSX.Element {
             {/* Glass Navigation Bar */}
             <View style={styles.navContainer}>
                 <View style={styles.pillWrapper}>
-                    <BlurView intensity={80} tint="dark" style={styles.glassPill}>
+                    <BlurView intensity={80} tint="extraLight" style={styles.glassPill}>
                         <View style={styles.pillContent}>
 
                             {/* Sliding Indicator */}
@@ -93,7 +93,7 @@ export default function GlassNavBar(): React.JSX.Element {
                                             <Icon
                                                 name={item.icon}
                                                 size={24}
-                                                color={isActive ? "#FF3B30" : "#8E8E93"} // Apple Red active, Gray inactive
+                                                color={isActive ? "#FF3B30" : "#000000ff"} // Apple Red active, Gray inactive
                                                 strokeWidth={isActive ? 0 : 2}
                                                 fill={isActive ? "#FF3B30" : "transparent"} // Solid fill when active
                                             />
@@ -123,38 +123,38 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         width: TAB_BAR_WIDTH,
         maxWidth: 400,
-        shadowColor: "#000",
+        shadowColor: "#4c4c4cff",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
         shadowRadius: 20,
         elevation: 15,
-        borderRadius: 40,
+        borderRadius: 120, // Matched to glass pill
     },
     pillWrapper: {
-        borderRadius: 40,
+        borderRadius: 120, // Matched to glass pill
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.15)',
         backgroundColor: 'rgba(0,0,0,0.2)',
     },
     glassPill: {
-        borderRadius: 40,
-        height: 80,
+        borderRadius: 120,
+        height: 70,
     },
     pillContent: {
         flexDirection: 'row',
         alignItems: 'center',
         height: '100%',
-        paddingHorizontal: 10, // Slight padding for the track
+        paddingHorizontal: 10,
     },
-    activeIndicator: { // The sliding spotlight
+    activeIndicator: {
         position: 'absolute',
-        top: 10, // Center vertically (80 - 60)/2
-        left: 10, // Match paddingHorizontal
+        top: 4, // (70 - 50) / 2 = 10 for perfect centering\
+        left: 10,
         width: TAB_WIDTH,
-        height: 60,
-        borderRadius: 30, // Squircle shape
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        height: 60, // Reduced height to fit nicely inside 70px
+        borderRadius: 30,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)', // Increased visibility
         zIndex: 0,
     },
     navItem: {
@@ -166,15 +166,15 @@ const styles = StyleSheet.create({
     },
     itemContent: {
         alignItems: 'center',
-        gap: 6,
+        gap: 4, // Reduced gap slightly for tighter layout
     },
     activeItemContent: {
         transform: [{ scale: 1.05 }],
     },
     navText: {
-        fontSize: 11,
+        fontSize: 10, // Slight adjustment for compactness
         fontWeight: '500',
-        color: '#8E8E93',
+        color: '#000000ff',
     },
     activeNavText: {
         color: '#FF3B30',
