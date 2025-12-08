@@ -71,41 +71,78 @@ export class CameraRecognitionEngine {
   }
 
   /**
-   * Main processing pipeline
+   * Main processing pipeline - Optimized Flow
+   * 1. Extract text from image (OCR)
+   * 2. Get geolocation
+   * 3. Match OCR + GPS to find exact restaurant
+   * 4. Send to Yelp for detailed information
    * Returns strict JSON only
    */
   async processFrame(input: RecognitionInput): Promise<RecognitionOutput> {
     try {
-      console.log('🔍 Starting AR Camera Recognition...');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🎯 AR RECOGNITION PIPELINE STARTED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      // STEP 1: OCR - Extract text from camera frame
-      console.log('📸 Step 1: Running Google Vision OCR...');
+      // STEP 1: OCR - Extract text from camera image FIRST
+      console.log('\n📸 STEP 1: Image Analysis (Google Vision OCR)');
+      console.log('   Processing image...');
       const ocrResult = await this.visionService.extractText(input.camera_image_base64);
       
       if (!ocrResult.restaurantNameCandidates.length) {
+        console.log('   ❌ No text detected in image');
         return this.createEmptyResponse('No text detected in image');
       }
+      
+      console.log('   ✅ OCR Complete!');
+      console.log('   📝 Extracted text:', ocrResult.fullText.slice(0, 100) + '...');
+      console.log('   🎯 Restaurant candidates:', ocrResult.restaurantNameCandidates);
 
-      // STEP 2: Google Maps - Identify restaurant
-      console.log('🗺️ Step 2: Identifying restaurant with Google Maps...');
+      // STEP 2: Fetch Geolocation (already have it from input)
+      console.log('\n📍 STEP 2: Geolocation');
+      console.log('   GPS Coordinates:', input.gps);
+      console.log('   Ready to match with nearby restaurants');
+
+      // STEP 3: Match OCR + GPS - Find exact restaurant
+      console.log('\n🗺️ STEP 3: Restaurant Identification (Google Maps Places)');
+      console.log('   Matching OCR text with GPS location...');
       const googleMatch = await this.mapsService.findRestaurant(
         ocrResult.restaurantNameCandidates,
         input.gps
       );
 
       if (!googleMatch) {
+        console.log('   ❌ No restaurant match found');
+        console.log('   💡 Try getting closer or pointing at clearer signage');
         return this.createEmptyResponse('No restaurant found nearby', ocrResult.fullText);
       }
 
-      // STEP 3: Yelp AI - Get restaurant intelligence
-      console.log('🍽️ Step 3: Fetching Yelp AI insights...');
+      console.log('   ✅ Restaurant Identified!');
+      console.log('   🏪 Name:', googleMatch.name);
+      console.log('   📍 Address:', googleMatch.address);
+      console.log('   ⭐ Rating:', googleMatch.rating);
+
+      // STEP 4: Send to Yelp - Get detailed restaurant information
+      console.log('\n🍽️ STEP 4: Fetching Restaurant Details (Yelp API)');
+      console.log('   Sending to Yelp:', googleMatch.name);
+      console.log('   Location:', googleMatch.geometry.location);
+      
       const yelpData = await this.yelpService.getRestaurantIntelligence(
         googleMatch.name,
         googleMatch.geometry.location
       );
 
-      // STEP 4: Supabase - Personalization
-      console.log('👤 Step 4: Personalizing with user data...');
+      if (yelpData) {
+        console.log('   ✅ Yelp Data Retrieved!');
+        console.log('   📊 Reviews:', yelpData.review_count);
+        console.log('   🍕 Popular dishes:', yelpData.popular_dishes.length);
+        console.log('   🥗 Dietary labels:', yelpData.dietary_labels.length);
+      } else {
+        console.log('   ⚠️ Yelp data not available (will use Google data only)');
+      }
+
+      // STEP 5: Supabase - Add personalization
+      console.log('\n👤 STEP 5: Personalizing with user data...');
       const personalization = this.supabaseService.calculatePersonalization(
         input.supabase_user as UserPreferences,
         {
@@ -123,9 +160,13 @@ export class CameraRecognitionEngine {
         yelpData
       );
 
-      console.log('✅ Recognition complete!');
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ RECOGNITION COMPLETE!');
+      console.log(`   Restaurant: ${googleMatch.name}`);
+      console.log(`   Confidence: ${(confidence_score * 100).toFixed(0)}%`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-      // STEP 5: Return unified JSON
+      // STEP 6: Return unified JSON
       return {
         ocr_text: ocrResult.fullText,
         google_match: {
@@ -149,7 +190,7 @@ export class CameraRecognitionEngine {
         confidence_score,
       };
     } catch (error) {
-      console.error('❌ Recognition pipeline error:', error);
+      console.error('\n❌ RECOGNITION PIPELINE ERROR:', error);
       return this.createEmptyResponse('Processing error occurred');
     }
   }
