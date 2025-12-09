@@ -42,6 +42,15 @@ export default function RootLayout() {
             gestureDirection: 'vertical',
           }} 
         />
+        <Stack.Screen 
+          name="chat/index" 
+          options={{ 
+            headerShown: false,
+            presentation: 'card',
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+          }} 
+        />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />
