@@ -31,6 +31,7 @@ export default function ItineraryScreen() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [expandedMeals, setExpandedMeals] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadItinerary();
@@ -118,6 +119,13 @@ export default function ItineraryScreen() {
     }
   };
 
+  const toggleMealExpanded = (mealId: string) => {
+    setExpandedMeals(prev => ({
+      ...prev,
+      [mealId]: !prev[mealId]
+    }));
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -183,7 +191,7 @@ export default function ItineraryScreen() {
         </View>
       </MotiView>
 
-      {/* Day Tabs */}
+      {/* Day Tabs - Compact */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -194,18 +202,39 @@ export default function ItineraryScreen() {
           const date = new Date(day.date);
           
           return (
-            <TouchableOpacity
+            <MotiView
               key={day.dayNumber}
-              style={[styles.dayTab, isActive && styles.dayTabActive]}
-              onPress={() => setSelectedDay(day.dayNumber)}
+              from={{ opacity: 0, scale: 0.8 }}
+              animate={{ 
+                opacity: 1, 
+                scale: isActive ? 1 : 0.95,
+              }}
+              transition={{ 
+                type: 'spring',
+                delay: index * 50,
+              }}
             >
-              <Text style={[styles.dayTabLabel, isActive && styles.dayTabLabelActive]}>
-                Day {day.dayNumber}
-              </Text>
-              <Text style={[styles.dayTabDate, isActive && styles.dayTabDateActive]}>
-                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dayTab, isActive && styles.dayTabActive]}
+                onPress={() => setSelectedDay(day.dayNumber)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dayTabNumber, isActive && styles.dayTabNumberActive]}>
+                  {day.dayNumber}
+                </Text>
+                <Text style={[styles.dayTabLabel, isActive && styles.dayTabLabelActive]}>
+                  {date.toLocaleDateString('en-US', { month: 'short' })}
+                </Text>
+                <Text style={[styles.dayTabDate, isActive && styles.dayTabDateActive]}>
+                  {date.getDate()}
+                </Text>
+                
+                {/* Active Indicator Dot */}
+                {isActive && (
+                  <View style={styles.activeDot} />
+                )}
+              </TouchableOpacity>
+            </MotiView>
           );
         })}
       </ScrollView>
@@ -229,14 +258,21 @@ export default function ItineraryScreen() {
         </MotiView>
 
         {/* Meals */}
-        {currentDay.meals.map((meal, index) => (
+        {currentDay.meals.map((meal, index) => {
+          const isExpanded = expandedMeals[meal.id] ?? true;
+          
+          return (
           <MotiView
             key={meal.id}
-            from={{ opacity: 0, translateY: 30 }}
-            animate={{ opacity: 1, translateY: 0 }}
+            from={{ opacity: 0, translateY: 30, scale: 0.95 }}
+            animate={{ opacity: 1, translateY: 0, scale: 1 }}
             transition={{ type: 'spring', delay: index * 100 + 200 }}
-            style={styles.mealCard}
           >
+            <TouchableOpacity
+              activeOpacity={0.95}
+              onPress={() => toggleMealExpanded(meal.id)}
+              style={styles.mealCard}
+            >
             {/* Meal Header */}
             <View style={styles.mealHeader}>
               <View style={styles.mealTimeContainer}>
@@ -292,65 +328,110 @@ export default function ItineraryScreen() {
                 </Text>
               </View>
 
-              {/* Recommended Dishes */}
-              {meal.recommendedDishes.length > 0 && (
-                <View style={styles.dishesContainer}>
-                  <Text style={styles.dishesLabel}>🍴 Recommended</Text>
-                  {meal.recommendedDishes.map((dish, dishIndex) => (
-                    <View key={dishIndex} style={styles.dishItem}>
-                      <View style={styles.dishLeft}>
-                        <Text style={styles.dishName}>{dish.name}</Text>
-                        <Text style={styles.dishWhy}>{dish.why}</Text>
-                      </View>
-                      <Text style={styles.dishPrice}>${dish.price}</Text>
-                    </View>
-                  ))}
-                </View>
+              {/* Recommended Dishes - Collapsible */}
+              {isExpanded && meal.recommendedDishes.length > 0 && (
+                <MotiView
+                  from={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ type: 'timing', duration: 300 }}
+                >
+                  <View style={styles.dishesContainer}>
+                    <Text style={styles.dishesLabel}>🍴 Recommended</Text>
+                    {meal.recommendedDishes.map((dish, dishIndex) => (
+                      <MotiView
+                        key={dishIndex}
+                        from={{ opacity: 0, translateX: -20 }}
+                        animate={{ opacity: 1, translateX: 0 }}
+                        transition={{ type: 'spring', delay: dishIndex * 100 }}
+                      >
+                        <View style={styles.dishItem}>
+                          <View style={styles.dishLeft}>
+                            <Text style={styles.dishName}>{dish.name}</Text>
+                            <Text style={styles.dishWhy}>{dish.why}</Text>
+                          </View>
+                          <Text style={styles.dishPrice}>${dish.price}</Text>
+                        </View>
+                      </MotiView>
+                    ))}
+                  </View>
+                </MotiView>
               )}
 
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    // Open restaurant detail
-                    console.log('View restaurant:', meal.restaurant.id);
-                  }}
+              {/* Action Buttons - Only show when expanded */}
+              {isExpanded && (
+                <MotiView
+                  from={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ type: 'timing', duration: 300, delay: 150 }}
                 >
-                  <Icon name="Info" size={18} color="#FF3B30" />
-                  <Text style={styles.actionButtonText}>Details</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    // Open maps
-                    console.log('Open maps for:', meal.restaurant.name);
-                  }}
-                >
-                  <Icon name="Map" size={18} color="#FF3B30" />
-                  <Text style={styles.actionButtonText}>Directions</Text>
-                </TouchableOpacity>
-
-                {meal.reservationNeeded && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionButtonPrimary]}
-                  >
-                    <LinearGradient
-                      colors={['#FF3B30', '#FF6B6B']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.actionButtonGradient}
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        // Open restaurant detail
+                        console.log('View restaurant:', meal.restaurant.id);
+                      }}
+                      activeOpacity={0.7}
                     >
-                      <Icon name="Calendar" size={18} color="#FFF" />
-                      <Text style={styles.actionButtonTextPrimary}>Book</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-              </View>
+                      <Icon name="Info" size={18} color="#FF3B30" />
+                      <Text style={styles.actionButtonText}>Details</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        // Open maps
+                        console.log('Open maps for:', meal.restaurant.name);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Icon name="Map" size={18} color="#FF3B30" />
+                      <Text style={styles.actionButtonText}>Directions</Text>
+                    </TouchableOpacity>
+
+                    {meal.reservationNeeded && (
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.actionButtonPrimary]}
+                        activeOpacity={0.8}
+                      >
+                        <LinearGradient
+                          colors={['#FF3B30', '#FF6B6B']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.actionButtonGradient}
+                        >
+                          <Icon name="Calendar" size={18} color="#FFF" />
+                          <Text style={styles.actionButtonTextPrimary}>Book</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </MotiView>
+              )}
+
+              {/* Expand/Collapse Indicator */}
+              <TouchableOpacity
+                style={styles.expandButton}
+                onPress={() => toggleMealExpanded(meal.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.expandText}>
+                  {isExpanded ? 'Show Less' : 'Show More'}
+                </Text>
+                <MotiView
+                  animate={{ 
+                    rotate: isExpanded ? '180deg' : '0deg' 
+                  }}
+                  transition={{ type: 'timing', duration: 300 }}
+                >
+                  <Icon name="ChevronDown" size={20} color="#FF3B30" />
+                </MotiView>
+              </TouchableOpacity>
             </View>
+          </TouchableOpacity>
           </MotiView>
-        ))}
+        );
+        })}
 
         {/* Day Summary */}
         <View style={styles.daySummaryCard}>
@@ -600,39 +681,68 @@ const styles = StyleSheet.create({
   },
   dayTabs: {
     paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 20,
   },
   dayTab: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
     borderColor: '#F0F0F0',
-    minWidth: 80,
+    width: 70,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   dayTabActive: {
     backgroundColor: '#FF3B30',
     borderColor: '#FF3B30',
+    shadowColor: '#FF3B30',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  dayTabNumber: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  dayTabNumberActive: {
+    color: '#FFF',
   },
   dayTabLabel: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '700',
     color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 2,
   },
   dayTabLabelActive: {
-    color: '#FFF',
+    color: 'rgba(255,255,255,0.8)',
   },
   dayTabDate: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   dayTabDateActive: {
-    color: 'rgba(255,255,255,0.9)',
+    color: '#FFF',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: 6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFF',
   },
   scrollView: {
     flex: 1,
@@ -957,6 +1067,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#34C759',
+  },
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    marginTop: 16,
+  },
+  expandText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FF3B30',
   },
 });
 
