@@ -41,8 +41,8 @@ export default function ProfilePage() {
     },
   ];
 
-  return (
-    <View style={styles.container}>
+    return (
+        <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                     <Text style={styles.menuTitle}>{item.title}</Text>
                     <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
                   </View>
-                </View>
+            </View>
                 <Icon name="ChevronRight" size={24} color="#C7C7CC" />
               </TouchableOpacity>
             </MotiView>
@@ -106,13 +106,13 @@ export default function ProfilePage() {
         {/* Bottom Spacing */}
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
-  );
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+    container: {
+        flex: 1,
     backgroundColor: '#F5F5F7',
   },
   scrollView: {
@@ -184,22 +184,22 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-  },
+    },
   menuTextContainer: {
     gap: 4,
-  },
+    },
   menuTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#1A1A1A',
-  },
+    },
   menuSubtitle: {
     fontSize: 14,
     fontWeight: '500',

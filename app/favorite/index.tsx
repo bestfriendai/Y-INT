@@ -101,7 +101,7 @@ export default function TripPlannerPage() {
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: 'timing', duration: 600 }}
         >
-          <Text style={styles.headerTitle}>Plan Your Trip</Text>
+          <Text style={styles.headerTitle}>Smart Itinerary</Text>
           <Text style={styles.headerSubtitle}>Create a personalized food itinerary</Text>
         </MotiView>
       </View>

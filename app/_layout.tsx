@@ -15,7 +15,7 @@ export default function RootLayout() {
 
   return (
     <FavoritesProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack
           screenOptions={{
             headerShown: false,
@@ -77,9 +77,9 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
     </FavoritesProvider>
   );
 }
