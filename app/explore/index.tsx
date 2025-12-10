@@ -60,7 +60,7 @@ const PLACES_NEARBY = [
         rating: 4.8,
         reviews: 4200,
         distance: '3.2km away',
-        image: 'https://images.unsplash.com/photo-1589197331516-7c1e5d39bb26?q=80&w=2670&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     },
     {
         id: '4',
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     seeAllText: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#007AFF',
+        color: '#FA6868',
     },
     resortsList: {
         paddingHorizontal: 25,
