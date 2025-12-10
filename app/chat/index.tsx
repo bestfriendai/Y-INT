@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import Icon from '@/components/LucideIcons';
 import { MotiView, MotiText } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { CostEstimatorService, CostComparison } from '@/services/costEstimatorService';
+import { CostEstimatorService, CostComparison, ComparisonError } from '@/services/costEstimatorService';
 import * as Location from 'expo-location';
 
 interface Message {
@@ -97,21 +97,35 @@ export default function ChatPage() {
           location
         );
 
-        if (comparison) {
+        if (!comparison) {
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
-            text: generateComparisonResponse(comparison),
+            text: 'Sorry, I encountered an error while comparing. Please try again with a different format or check the restaurant names.',
             sender: 'ai',
             timestamp: new Date(),
-            comparisonData: comparison,
+          };
+          setMessages((prev) => [...prev, aiMessage]);
+        } else if ('success' in comparison && !comparison.success) {
+          // Handle error response
+          const errorMsg = comparison.missingRestaurants.length > 0
+            ? `I couldn't find the following: ${comparison.missingRestaurants.join(' and ')}.\n\nPlease try:\n• Check spelling of restaurant names\n• Try using just the restaurant name (e.g., "Chipotle" instead of "Chipotle in Hoboken")\n• Remove location names if included\n\nExample: "Compare Karma Kafe biryani $18 vs Chipotle burrito $18"`
+            : comparison.error;
+          
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: errorMsg,
+            sender: 'ai',
+            timestamp: new Date(),
           };
           setMessages((prev) => [...prev, aiMessage]);
         } else {
+          // Success - show comparison
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
-            text: 'I couldn\'t find one or both restaurants. Please check the names and try again!',
+            text: generateComparisonResponse(comparison as CostComparison),
             sender: 'ai',
             timestamp: new Date(),
+            comparisonData: comparison as CostComparison,
           };
           setMessages((prev) => [...prev, aiMessage]);
         }
@@ -148,8 +162,14 @@ export default function ChatPage() {
    * - "compare restaurant1 vs restaurant2 for $25"
    * - "which is better restaurant1 or restaurant2 for 25 dollars"
    * - "cost estimator: option1 vs option2 budget 25"
+   * - "compare Karma Kafe biryani $18 vs Chipotle $18"
+   * - "biriyani at Karma Kafe $18 vs burrito at Chipotle $18"
    */
-  const parseCostEstimateRequest = (input: string): { option1: string; option2: string; budget: number } | null => {
+  const parseCostEstimateRequest = (input: string): { 
+    option1: string | { restaurant: string; dish?: string; cost?: number }; 
+    option2: string | { restaurant: string; dish?: string; cost?: number }; 
+    budget: number 
+  } | null => {
     const lowerInput = input.toLowerCase();
     
     // Check for cost estimator keywords
@@ -165,48 +185,115 @@ export default function ChatPage() {
       return null;
     }
 
-    // Extract budget
-    const budgetMatch = input.match(/\$?(\d+)/);
-    if (!budgetMatch) {
-      return null;
+    // Extract budget - find all dollar amounts
+    const budgetMatches = input.match(/\$(\d+)/g);
+    let budget = 25; // Default
+    if (budgetMatches && budgetMatches.length > 0) {
+      // Use the last mentioned budget or the highest amount
+      const amounts = budgetMatches.map(m => parseFloat(m.replace('$', '')));
+      budget = Math.max(...amounts);
+    } else {
+      const budgetMatch = input.match(/\$?(\d+)/);
+      if (budgetMatch) {
+        budget = parseFloat(budgetMatch[1]);
+      }
     }
-    const budget = parseFloat(budgetMatch[1]);
 
-    // Extract two options
+    // Extract two options - improved patterns
     const vsPatterns = [
-      /compare\s+(.+?)\s+(?:vs|versus|or)\s+(.+?)\s+(?:for|with|budget)/i,
-      /(.+?)\s+(?:vs|versus|or)\s+(.+?)\s+(?:for|with|budget)\s+\$?(\d+)/i,
-      /which is better\s+(.+?)\s+or\s+(.+?)\s+(?:for|with)/i,
-      /cost estimator[:\s]+(.+?)\s+vs\s+(.+?)\s+budget\s+(\d+)/i,
+      /compare\s+(.+?)\s+(?:vs|versus|or)\s+(.+?)(?:\s+for|\s+with|\s+budget|$)/i,
+      /(.+?)\s+(?:vs|versus|or)\s+(.+?)(?:\s+for|\s+with|\s+budget)/i,
+      /which is better\s+(.+?)\s+or\s+(.+?)(?:\s+for|\s+with|$)/i,
+      /cost estimator[:\s]+(.+?)\s+vs\s+(.+?)(?:\s+budget|$)/i,
     ];
+
+    let option1Str = '';
+    let option2Str = '';
 
     for (const pattern of vsPatterns) {
       const match = input.match(pattern);
       if (match) {
-        return {
-          option1: match[1].trim(),
-          option2: match[2].trim(),
-          budget,
-        };
+        option1Str = match[1].trim();
+        option2Str = match[2].trim();
+        break;
       }
     }
 
     // Fallback: try to split by common separators
-    const separators = [' vs ', ' versus ', ' or '];
-    for (const sep of separators) {
-      if (lowerInput.includes(sep)) {
-        const parts = input.split(sep);
-        if (parts.length >= 2) {
-          return {
-            option1: parts[0].replace(/compare|cost estimator/gi, '').trim(),
-            option2: parts[1].replace(/for|with|budget/gi, '').replace(/\$?\d+/g, '').trim(),
-            budget,
-          };
+    if (!option1Str || !option2Str) {
+      const separators = [' vs ', ' versus ', ' or '];
+      for (const sep of separators) {
+        if (lowerInput.includes(sep)) {
+          const parts = input.split(sep);
+          if (parts.length >= 2) {
+            option1Str = parts[0].replace(/compare|cost estimator/gi, '').trim();
+            option2Str = parts[1].replace(/for|with|budget/gi, '').trim();
+            break;
+          }
         }
       }
     }
 
-    return null;
+    if (!option1Str || !option2Str) {
+      return null;
+    }
+
+    // Parse each option to extract restaurant, dish, and cost
+    const parseOption = (optStr: string): string | { restaurant: string; dish?: string; cost?: number } => {
+      // Extract cost from option string
+      const costMatch = optStr.match(/\$(\d+)/);
+      const cost = costMatch ? parseFloat(costMatch[1]) : undefined;
+      const cleaned = optStr.replace(/\$\d+/g, '').trim();
+
+      // Use the service's parse method logic
+      // Pattern 1: "dish at restaurant" or "dish from restaurant"
+      const atPattern = /(.+?)\s+(?:at|from|in)\s+(.+)/i;
+      const atMatch = cleaned.match(atPattern);
+      if (atMatch) {
+        return {
+          restaurant: atMatch[2].trim(),
+          dish: atMatch[1].trim(),
+          cost: cost || budget,
+        };
+      }
+
+      // Pattern 2: "restaurant, dish" or "restaurant - dish"
+      const commaPattern = /(.+?)[,\-–]\s*(.+)/i;
+      const commaMatch = cleaned.match(commaPattern);
+      if (commaMatch) {
+        return {
+          restaurant: commaMatch[1].trim(),
+          dish: commaMatch[2].trim(),
+          cost: cost || budget,
+        };
+      }
+
+      // Pattern 3: "restaurant dish" (common dish names)
+      const commonDishes = ['biryani', 'biriyani', 'burrito', 'pizza', 'burger', 'taco', 'tacos', 'bowl', 'salad', 'curry', 'pasta', 'noodles', 'quesadilla'];
+      for (const dish of commonDishes) {
+        const dishPattern = new RegExp(`(.+?)\\s+${dish}\\s*`, 'i');
+        const dishMatch = cleaned.match(dishPattern);
+        if (dishMatch) {
+          return {
+            restaurant: dishMatch[1].trim(),
+            dish: dish,
+            cost: cost || budget,
+          };
+        }
+      }
+
+      // No dish found
+      return {
+        restaurant: cleaned,
+        cost: cost || budget,
+      };
+    };
+
+    return {
+      option1: parseOption(option1Str),
+      option2: parseOption(option2Str),
+      budget,
+    };
   };
 
   const generateComparisonResponse = (comparison: CostComparison): string => {
@@ -217,7 +304,7 @@ export default function ChatPage() {
     const lowerQuestion = userQuestion.toLowerCase();
 
     if (lowerQuestion.includes('cost') || lowerQuestion.includes('estimator') || lowerQuestion.includes('compare') || lowerQuestion.includes('budget')) {
-      return 'Cost Estimator\n\nI can help you compare two restaurants based on calories, quantity, and value!\n\nTry this format:\n"Compare Restaurant1 vs Restaurant2 for $25"\n\nor\n\n"Which is better: Pizza Place or Burger Joint for 25 dollars"\n\nI\'ll analyze both options and show you which gives better value based on:\n• Calories per dollar\n• Portion sizes\n• Overall value score\n\nWhat would you like to compare?';
+      return 'Cost Estimator\n\nI can help you compare two restaurants or specific dishes based on calories, quantity, and value!\n\nTry these formats:\n"Compare Restaurant1 vs Restaurant2 for $25"\n\n"Compare Karma Kafe biryani $18 vs Chipotle $18"\n\n"Biriyani at Karma Kafe $18 vs burrito at Chipotle $18"\n\nI\'ll analyze both options and show you which gives better value based on:\n• Calories per dollar\n• Portion sizes\n• Overall value score\n\nWhat would you like to compare?';
     } else if (lowerQuestion.includes('restaurant') || lowerQuestion.includes('food')) {
       return 'I can help you discover amazing restaurants! Try scanning a restaurant with the camera button, and I\'ll provide:\n\n• Detailed menu information\n• Popular dishes & reviews\n• Dietary labels (Vegan, Gluten-Free, etc.)\n• Personalized recommendations\n• **Cost comparisons** (try: "compare X vs Y for $25")\n\nWhat type of cuisine are you interested in?';
     } else if (lowerQuestion.includes('vegan') || lowerQuestion.includes('dietary')) {
@@ -253,6 +340,14 @@ export default function ChatPage() {
               </View>
               <View style={[styles.tableCell, styles.tableHeader, styles.restaurantColumn]}>
                 <View style={styles.restaurantHeader}>
+                  {option1.dishName && (
+                    <Text 
+                      style={[styles.dishNameText, winner === 'option1' && styles.winnerText]}
+                      numberOfLines={1}
+                    >
+                      {option1.dishName}
+                    </Text>
+                  )}
                   <Text 
                     style={[styles.tableHeaderText, winner === 'option1' && styles.winnerText]}
                     numberOfLines={2}
@@ -268,6 +363,14 @@ export default function ChatPage() {
               </View>
               <View style={[styles.tableCell, styles.tableHeader, styles.restaurantColumn]}>
                 <View style={styles.restaurantHeader}>
+                  {option2.dishName && (
+                    <Text 
+                      style={[styles.dishNameText, winner === 'option2' && styles.winnerText]}
+                      numberOfLines={1}
+                    >
+                      {option2.dishName}
+                    </Text>
+                  )}
                   <Text 
                     style={[styles.tableHeaderText, winner === 'option2' && styles.winnerText]}
                     numberOfLines={2}
@@ -862,6 +965,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     textAlign: 'center',
+  },
+  dishNameText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#8B5CF6',
+    textAlign: 'center',
+    textTransform: 'capitalize',
+    marginBottom: 2,
   },
   winnerText: {
     color: '#FF8A80',

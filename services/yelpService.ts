@@ -61,26 +61,33 @@ export class YelpService {
     latitude: number,
     longitude: number,
     term: string = 'restaurants',
-    limit: number = 10
+    limit: number = 10,
+    requireRestaurantCategory: boolean = true
   ): Promise<YelpBusiness[]> {
     try {
+      const params: any = {
+        term,
+        latitude,
+        longitude,
+        limit,
+        sort_by: 'best_match',
+      };
+
+      // Only add restaurant category filter if we're doing a general search
+      if (requireRestaurantCategory && term.toLowerCase() === 'restaurants') {
+        params.categories = 'restaurants';
+      }
+
       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
-        params: {
-          term,
-          latitude,
-          longitude,
-          limit,
-          categories: 'restaurants',
-          sort_by: 'rating',
-        },
+        params,
       });
 
       return response.data.businesses || [];
-    } catch (error) {
-      console.error('Yelp search restaurants error:', error);
+    } catch (error: any) {
+      console.error('Yelp search restaurants error:', error?.response?.data || error?.message || error);
       return [];
     }
   }
@@ -159,9 +166,10 @@ export class YelpService {
       });
 
       return response.data;
-    } catch (error) {
-      console.error('Yelp details error:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('Yelp details error:', error?.response?.data || error?.message || error);
+      // Return null instead of throwing to allow graceful degradation
+      return null;
     }
   }
 
