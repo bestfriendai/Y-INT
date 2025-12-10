@@ -1,52 +1,161 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Dimensions, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Dimensions, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Icon from '@/components/LucideIcons';
 import { MotiView, MotiText, MotiImage } from 'moti';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import { YelpService, YelpBusiness } from '@/services/yelpService';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = ['Restaurants', 'Saved', 'Itenaries', 'Plumbers', 'Cleaning'];
 
-const DESTINATIONS = [
-    {
-        id: '1',
-        name: 'Rio de Janeiro',
-        country: 'Brazil',
-        rating: 5.0,
-        reviews: 143,
-        image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?q=80&w=2670&auto=format&fit=crop',
-    },
-    {
-        id: '2',
-        name: 'Kyoto',
-        country: 'Japan',
-        rating: 4.9,
-        reviews: 120,
-        image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2670&auto=format&fit=crop',
-    },
-    {
-        id: '3',
-        name: 'Santorini',
-        country: 'Greece',
-        rating: 4.8,
-        reviews: 98,
-        image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?q=80&w=2670&auto=format&fit=crop',
-    }
-];
+const yelpService = new YelpService();
 
 export default function HomePage() {
     const router = useRouter();
     const [activeCategory, setActiveCategory] = useState('Restaurants');
+    const [restaurants, setRestaurants] = useState<YelpBusiness[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+    useEffect(() => {
+        loadRestaurants();
+    }, []);
+
+    const loadRestaurants = async () => {
+        try {
+            // Get user location
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                console.log('Permission to access location was denied');
+                // Use default location (San Francisco)
+                const defaultLat = 37.7749;
+                const defaultLng = -122.4194;
+                setUserLocation({ latitude: defaultLat, longitude: defaultLng });
+                await fetchRestaurants(defaultLat, defaultLng);
+                return;
+            }
+
+            let location = await Location.getCurrentPositionAsync({});
+            setUserLocation({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            });
+
+            // Fetch restaurants from Yelp
+            await fetchRestaurants(location.coords.latitude, location.coords.longitude);
+        } catch (error) {
+            console.error('Error loading restaurants:', error);
+            // Use default location on error
+            const defaultLat = 37.7749;
+            const defaultLng = -122.4194;
+            setUserLocation({ latitude: defaultLat, longitude: defaultLng });
+            await fetchRestaurants(defaultLat, defaultLng);
+        }
+    };
+
+    const fetchRestaurants = async (lat: number, lng: number) => {
+        try {
+            setLoading(true);
+            const results = await yelpService.searchRestaurants(lat, lng, 'restaurants', 10);
+            setRestaurants(results);
+        } catch (error) {
+            console.error('Error fetching restaurants:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onRefresh = async () => {
+        if (!userLocation) return;
+        
+        setRefreshing(true);
+        try {
+            const results = await yelpService.searchRestaurants(
+                userLocation.latitude, 
+                userLocation.longitude, 
+                'restaurants', 
+                10
+            );
+            setRestaurants(results);
+        } catch (error) {
+            console.error('Error refreshing restaurants:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    const handleSeeMore = (restaurant: YelpBusiness) => {
+        // Prepare restaurant data in the format expected by the detail page
+        const restaurantData = {
+            google_match: {
+                name: restaurant.name,
+                address: `${restaurant.location.address1}, ${restaurant.location.city}, ${restaurant.location.state}`,
+                rating: restaurant.rating,
+                images: [restaurant.image_url],
+                phone: restaurant.phone,
+                website: '',
+                opening_hours: null,
+                hours: null,
+                location: {
+                    lat: restaurant.coordinates.latitude,
+                    lng: restaurant.coordinates.longitude,
+                },
+            },
+            yelp_ai: {
+                summary: `${restaurant.name} is a highly-rated ${restaurant.categories.map(cat => cat.title).join(', ')} in ${restaurant.location.city}.`,
+                review_highlights: `Customers love this place! With ${restaurant.review_count} reviews and a ${restaurant.rating} star rating, it's a local favorite.`,
+                popular_dishes: [],
+                menu_items: [],
+                dietary_labels: [],
+                photos: [restaurant.image_url],
+                categories: restaurant.categories.map(cat => cat.title),
+                yelp_rating: restaurant.rating,
+                review_count: restaurant.review_count,
+            },
+            personalization: {
+                match_score: Math.round(restaurant.rating * 20), // Convert 5-star rating to 100-point score
+                match_reasons: [
+                    `${restaurant.rating} star rating`,
+                    `${restaurant.review_count} reviews`,
+                    restaurant.price ? `Price range: ${restaurant.price}` : 'Affordable',
+                ],
+                personalized_recommendations: [
+                    `Highly rated ${restaurant.categories[0]?.title || 'restaurant'} with ${restaurant.rating} stars`,
+                    `Perfect match based on ${restaurant.review_count} customer reviews`,
+                ],
+                dietary_match: [],
+                ambiance_match: restaurant.categories[0]?.title || 'Restaurant',
+            },
+        };
+
+        router.push({
+            pathname: '/restaurant/[id]',
+            params: {
+                id: restaurant.id,
+                data: JSON.stringify(restaurantData),
+            },
+        });
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#FF8A80"
+                        colors={['#FF8A80']}
+                    />
+                }
             >
                 {/* Header */}
                 <MotiView
@@ -139,10 +248,21 @@ export default function HomePage() {
                     </ScrollView>
                 </View>
 
-                {/* Destination Cards */}
+                {/* Restaurant Cards */}
                 <View style={styles.cardsContainer}>
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#FF8A80" />
+                            <MotiText style={styles.loadingText}>Finding amazing restaurants...</MotiText>
+                        </View>
+                    ) : restaurants.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Icon name="UtensilsCrossed" size={48} color="#8E8E93" />
+                            <MotiText style={styles.emptyText}>No restaurants found nearby</MotiText>
+                        </View>
+                    ) : (
                     <FlatList
-                        data={DESTINATIONS}
+                            data={restaurants}
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         pagingEnabled
@@ -156,7 +276,11 @@ export default function HomePage() {
                                 animate={{ opacity: 1, translateY: 0 }}
                                 transition={{ type: 'spring', delay: 600 + (index * 200) }}
                             >
-                                <Image source={{ uri: item.image }} style={styles.cardImage} />
+                                    <Image 
+                                        source={{ uri: item.image_url }} 
+                                        style={styles.cardImage}
+                                        defaultSource={require('@/assets/images/icon.png')}
+                                    />
 
                                 {/* Overlay Gradient */}
                                 <LinearGradient
@@ -171,22 +295,32 @@ export default function HomePage() {
 
                                 {/* Bottom Content */}
                                 <View style={styles.cardContent}>
-                                    <MotiText style={styles.cardCountry}>{item.country}</MotiText>
-                                    <MotiText style={styles.cardCity}>{item.name}</MotiText>
+                                        <MotiText style={styles.cardCountry}>
+                                            {item.categories[0]?.title || 'Restaurant'}
+                                        </MotiText>
+                                        <MotiText style={styles.cardCity} numberOfLines={2}>
+                                            {item.name}
+                                        </MotiText>
 
                                     <View style={styles.reviewContainer}>
                                         <View style={styles.ratingBadge}>
                                             <Icon name="Star" size={12} color="#FFD700" fill="#FFD700" />
                                             <MotiText style={styles.ratingText}>{item.rating}</MotiText>
                                         </View>
-                                        <MotiText style={styles.reviewCount}>{item.reviews} reviews</MotiText>
+                                            <MotiText style={styles.reviewCount}>
+                                                {item.review_count} reviews
+                                            </MotiText>
                                     </View>
 
-                                    <TouchableOpacity style={styles.seeMoreButton} activeOpacity={0.8}>
-                                        <BlurView intensity={80} tint="dark" style={styles.seeMoreBlur}>
+                                        <TouchableOpacity 
+                                            style={styles.seeMoreButton} 
+                                            activeOpacity={0.8}
+                                            onPress={() => handleSeeMore(item)}
+                                        >
+                                            <BlurView intensity={80} tint="dark" style={styles.seeMoreBlur}>
                                             <MotiText style={styles.seeMoreText}>See more</MotiText>
                                             <View style={styles.arrowCircle}>
-                                                <Icon name="ArrowRight" size={18} color="#1A1A1A" />
+                                                    <Icon name="ArrowRight" size={18} color="#1A1A1A" />
                                             </View>
                                         </BlurView>
                                     </TouchableOpacity>
@@ -195,6 +329,7 @@ export default function HomePage() {
                         )}
                         keyExtractor={item => item.id}
                     />
+                    )}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -443,5 +578,31 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 4,
         elevation: 3,
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 100,
+        gap: 16,
+    },
+    loadingText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#8E8E93',
+        marginTop: 12,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 100,
+        gap: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#8E8E93',
+        marginTop: 12,
+    },
 });

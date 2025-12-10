@@ -53,6 +53,15 @@ export default function RestaurantDetailPage() {
   }
 
   const { google_match, yelp_ai, personalization } = restaurantData;
+  
+  // Safety checks with default values
+  const safeGoogleMatch = google_match || {};
+  const safeYelpAi = yelp_ai || {};
+  const safePersonalization = personalization || {
+    personalized_recommendations: [],
+    match_reasons: [],
+    dietary_match: [],
+  };
 
   return (
     <>
@@ -67,9 +76,9 @@ export default function RestaurantDetailPage() {
         >
           {/* Hero Image */}
           <View style={styles.heroContainer}>
-            {google_match.images && google_match.images.length > 0 ? (
+            {safeGoogleMatch.images && safeGoogleMatch.images.length > 0 ? (
               <Image
-                source={{ uri: google_match.images[0] }}
+                source={{ uri: safeGoogleMatch.images[0] }}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -121,28 +130,29 @@ export default function RestaurantDetailPage() {
           >
             {/* Restaurant Name & Location */}
             <View style={styles.titleSection}>
-              <Text style={styles.restaurantName}>{google_match.name}</Text>
+              <Text style={styles.restaurantName}>{safeGoogleMatch.name || 'Restaurant'}</Text>
               
               <View style={styles.locationRow}>
                 <View style={styles.locationBadge}>
                   <MapPin size={14} color="#34C759" strokeWidth={2} />
                   <Text style={styles.locationText}>
-                    {google_match.address.split(',')[1]?.trim() || 'Location'}
+                    {safeGoogleMatch.address?.split(',')[1]?.trim() || safeGoogleMatch.address || 'Location'}
                   </Text>
                 </View>
                 
                 <View style={styles.ratingBadge}>
                   <Star size={14} color="#FFD700" fill="#FFD700" strokeWidth={2} />
-                  <Text style={styles.ratingText}>{google_match.rating}</Text>
+                  <Text style={styles.ratingText}>{safeGoogleMatch.rating || safeYelpAi.yelp_rating || 'N/A'}</Text>
                   <Text style={styles.reviewCount}>
-                    {yelp_ai?.review_count || '143'} reviews
+                    {safeYelpAi?.review_count || '0'} reviews
                   </Text>
                 </View>
               </View>
             </View>
 
             {/* Personalization Banner */}
-            {personalization.personalized_recommendations.length > 0 && (
+            {safePersonalization.personalized_recommendations && 
+             safePersonalization.personalized_recommendations.length > 0 && (
               <Animated.View entering={FadeIn.delay(200)}>
                 <LinearGradient
                   colors={['#FF3B30', '#FF6B58']}
@@ -152,17 +162,17 @@ export default function RestaurantDetailPage() {
                 >
                   <Award size={18} color="#fff" />
                   <Text style={styles.personalText}>
-                    {personalization.personalized_recommendations[0]}
+                    {safePersonalization.personalized_recommendations[0]}
                   </Text>
                 </LinearGradient>
               </Animated.View>
             )}
 
             {/* Description */}
-            {yelp_ai?.summary && (
+            {safeYelpAi?.summary && (
               <View style={styles.descriptionSection}>
                 <Text style={styles.description}>
-                  {yelp_ai.summary}
+                  {safeYelpAi.summary}
                 </Text>
                 <TouchableOpacity>
                   <Text style={styles.readMore}>Read more</Text>
@@ -178,7 +188,11 @@ export default function RestaurantDetailPage() {
                 </View>
                 <Text style={styles.infoLabel}>Hours</Text>
                 <Text style={styles.infoValue} numberOfLines={2}>
-                  {google_match.opening_hours?.split(',')[0] || 'See hours'}
+                  {typeof safeGoogleMatch.opening_hours === 'string' 
+                    ? safeGoogleMatch.opening_hours.split(',')[0] 
+                    : typeof safeGoogleMatch.hours === 'string'
+                    ? safeGoogleMatch.hours.split(',')[0]
+                    : 'See hours'}
                 </Text>
               </View>
 
@@ -188,13 +202,13 @@ export default function RestaurantDetailPage() {
                 </View>
                 <Text style={styles.infoLabel}>Contact</Text>
                 <Text style={styles.infoValue} numberOfLines={2}>
-                  {google_match.contact || 'Not available'}
+                  {safeGoogleMatch.phone || safeGoogleMatch.contact || 'Not available'}
                 </Text>
               </View>
 
               <View style={styles.infoItem}>
                 <View style={styles.infoIcon}>
-                  <Text style={styles.priceIcon}>{google_match.price_level || '$$'}</Text>
+                  <Text style={styles.priceIcon}>{safeGoogleMatch.price_level || safeGoogleMatch.price || '$$'}</Text>
                 </View>
                 <Text style={styles.infoLabel}>Price</Text>
                 <Text style={styles.infoValue}>Moderate</Text>
@@ -202,7 +216,7 @@ export default function RestaurantDetailPage() {
             </View>
 
             {/* Popular Dishes */}
-            {yelp_ai?.popular_dishes && yelp_ai.popular_dishes.length > 0 && (
+            {safeYelpAi?.popular_dishes && safeYelpAi.popular_dishes.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Popular Dishes</Text>
@@ -216,7 +230,7 @@ export default function RestaurantDetailPage() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.dishesScroll}
                 >
-                  {yelp_ai.popular_dishes.slice(0, 5).map((dish, index) => (
+                  {safeYelpAi.popular_dishes.slice(0, 5).map((dish, index) => (
                     <Animated.View
                       key={index}
                       entering={FadeIn.delay(300 + index * 100)}
@@ -236,11 +250,11 @@ export default function RestaurantDetailPage() {
             )}
 
             {/* Dietary Labels */}
-            {yelp_ai?.dietary_labels && yelp_ai.dietary_labels.length > 0 && (
+            {safeYelpAi?.dietary_labels && safeYelpAi.dietary_labels.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Dietary Options</Text>
                 <View style={styles.labelsContainer}>
-                  {yelp_ai.dietary_labels.map((label, index) => (
+                  {safeYelpAi.dietary_labels.map((label, index) => (
                     <View key={index} style={styles.dietLabel}>
                       <Text style={styles.dietLabelText}>{label}</Text>
                     </View>
@@ -250,7 +264,8 @@ export default function RestaurantDetailPage() {
             )}
 
             {/* Photos Gallery */}
-            {google_match.images && google_match.images.length > 1 && (
+            {(safeGoogleMatch.images && safeGoogleMatch.images.length > 1) || 
+             (safeYelpAi.photos && safeYelpAi.photos.length > 1) ? (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Photos</Text>
@@ -264,7 +279,7 @@ export default function RestaurantDetailPage() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.photosScroll}
                 >
-                  {google_match.images.slice(0, 6).map((image: string, index: number) => (
+                  {(safeGoogleMatch.images || safeYelpAi.photos || []).slice(0, 6).map((image: string, index: number) => (
                     <Image
                       key={index}
                       source={{ uri: image }}
@@ -273,14 +288,14 @@ export default function RestaurantDetailPage() {
                   ))}
                 </ScrollView>
               </View>
-            )}
+            ) : null}
 
             {/* Address */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Location</Text>
               <View style={styles.addressCard}>
                 <MapPin size={20} color="#666" />
-                <Text style={styles.addressText}>{google_match.address}</Text>
+                <Text style={styles.addressText}>{safeGoogleMatch.address || 'Address not available'}</Text>
               </View>
             </View>
           </Animated.View>

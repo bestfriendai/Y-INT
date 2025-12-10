@@ -23,6 +23,28 @@ export interface YelpRestaurantData {
   review_count: number;
 }
 
+export interface YelpBusiness {
+  id: string;
+  name: string;
+  image_url: string;
+  rating: number;
+  review_count: number;
+  price?: string;
+  categories: Array<{ alias: string; title: string }>;
+  location: {
+    address1: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  phone: string;
+  distance?: number;
+}
+
 export class YelpService {
   private apiKey: string;
   private baseUrl: string;
@@ -30,6 +52,37 @@ export class YelpService {
   constructor() {
     this.apiKey = ENV.YELP_API_KEY;
     this.baseUrl = ENV.YELP_API_BASE_URL;
+  }
+
+  /**
+   * Search for restaurants by location
+   */
+  async searchRestaurants(
+    latitude: number,
+    longitude: number,
+    term: string = 'restaurants',
+    limit: number = 10
+  ): Promise<YelpBusiness[]> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        params: {
+          term,
+          latitude,
+          longitude,
+          limit,
+          categories: 'restaurants',
+          sort_by: 'rating',
+        },
+      });
+
+      return response.data.businesses || [];
+    } catch (error) {
+      console.error('Yelp search restaurants error:', error);
+      return [];
+    }
   }
 
   /**
