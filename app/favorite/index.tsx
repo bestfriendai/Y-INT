@@ -11,43 +11,40 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Icon from '@/components/LucideIcons';
 import { MotiView } from 'moti';
-import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
 const DIETARY_OPTIONS = [
-  { id: 'vegan', label: 'Vegan', emoji: '🌱' },
-  { id: 'vegetarian', label: 'Vegetarian', emoji: '🥗' },
-  { id: 'gluten_free', label: 'Gluten-Free', emoji: '🌾' },
-  { id: 'dairy_free', label: 'Dairy-Free', emoji: '🥛' },
-  { id: 'halal', label: 'Halal', emoji: '🕌' },
-  { id: 'kosher', label: 'Kosher', emoji: '✡️' },
+  { id: 'vegan', label: 'Vegan' },
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'gluten_free', label: 'Gluten-Free' },
+  { id: 'dairy_free', label: 'Dairy-Free' },
+  { id: 'halal', label: 'Halal' },
+  { id: 'kosher', label: 'Kosher' },
 ];
 
 const CUISINE_OPTIONS = [
-  { id: 'italian', label: 'Italian', emoji: '🍝' },
-  { id: 'japanese', label: 'Japanese', emoji: '🍣' },
-  { id: 'mexican', label: 'Mexican', emoji: '🌮' },
-  { id: 'indian', label: 'Indian', emoji: '🍛' },
-  { id: 'chinese', label: 'Chinese', emoji: '🥡' },
-  { id: 'american', label: 'American', emoji: '🍔' },
-  { id: 'thai', label: 'Thai', emoji: '🍜' },
-  { id: 'mediterranean', label: 'Mediterranean', emoji: '🥙' },
+  { id: 'italian', label: 'Italian' },
+  { id: 'japanese', label: 'Japanese' },
+  { id: 'mexican', label: 'Mexican' },
+  { id: 'indian', label: 'Indian' },
+  { id: 'chinese', label: 'Chinese' },
+  { id: 'american', label: 'American' },
+  { id: 'thai', label: 'Thai' },
+  { id: 'mediterranean', label: 'Mediterranean' },
 ];
 
 const MEAL_TYPES = [
-  { id: 'breakfast', label: 'Breakfast', emoji: '🍳' },
-  { id: 'lunch', label: 'Lunch', emoji: '🍱' },
-  { id: 'dinner', label: 'Dinner', emoji: '🍽️' },
-  { id: 'snacks', label: 'Snacks', emoji: '🍿' },
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'lunch', label: 'Lunch' },
+  { id: 'dinner', label: 'Dinner' },
+  { id: 'snacks', label: 'Snacks' },
 ];
 
 export default function TripPlannerPage() {
@@ -80,7 +77,6 @@ export default function TripPlannerPage() {
   };
 
   const handleGenerate = () => {
-    // Navigate to generating screen
     router.push({
       pathname: '/itinerary/generating',
       params: {
@@ -103,12 +99,12 @@ export default function TripPlannerPage() {
       {/* Header */}
       <View style={styles.header}>
         <MotiView
-          from={{ opacity: 0, translateX: -20 }}
-          animate={{ opacity: 1, translateX: 0 }}
+          from={{ opacity: 0, translateY: -10 }}
+          animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: 'timing', duration: 600 }}
         >
-          <Text style={styles.headerTitle}>🗺️ Plan Food Trip</Text>
-          <Text style={styles.headerSubtitle}>AI-powered itinerary for foodies</Text>
+          <Text style={styles.headerTitle}>Plan Your Trip</Text>
+          <Text style={styles.headerSubtitle}>Create a personalized food itinerary</Text>
         </MotiView>
       </View>
 
@@ -122,53 +118,60 @@ export default function TripPlannerPage() {
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: 'spring', delay: 100 }}
-          style={styles.section}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>📍 Destination</Text>
-          <View style={styles.inputContainer}>
-            <Icon name="MapPin" size={20} color="#FF3B30" />
-            <TextInput
-              style={styles.input}
-              placeholder="Where are you going? (e.g., New York)"
-              placeholderTextColor="#999"
-              value={destination}
-              onChangeText={setDestination}
-            />
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="MapPin" size={18} color="#FF8A80" />
+            </View>
+            <Text style={styles.cardTitle}>Destination</Text>
           </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter city or location"
+            placeholderTextColor="#B8B8B8"
+            value={destination}
+            onChangeText={setDestination}
+          />
         </MotiView>
 
         {/* Trip Dates */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 200 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 150 }}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>📅 Trip Dates</Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="Calendar" size={18} color="#9C88FF" />
+            </View>
+            <Text style={styles.cardTitle}>Select Dates</Text>
+          </View>
           <View style={styles.dateRow}>
             <TouchableOpacity
-              style={styles.dateButton}
+              style={styles.dateBox}
               onPress={() => setShowStartPicker(true)}
             >
-              <Text style={styles.dateLabel}>From</Text>
-              <Text style={styles.dateValue}>
+              <Text style={styles.dateBoxLabel}>Start</Text>
+              <Text style={styles.dateBoxValue}>
                 {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </Text>
             </TouchableOpacity>
 
-            <Icon name="ArrowRight" size={20} color="#999" />
+            <Icon name="ArrowRight" size={16} color="#D1D1D6" />
 
             <TouchableOpacity
-              style={styles.dateButton}
+              style={styles.dateBox}
               onPress={() => setShowEndPicker(true)}
             >
-              <Text style={styles.dateLabel}>To</Text>
-              <Text style={styles.dateValue}>
+              <Text style={styles.dateBoxLabel}>End</Text>
+              <Text style={styles.dateBoxValue}>
                 {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.daysCount}>{calculateDays()} days</Text>
+          <Text style={styles.daysIndicator}>{calculateDays()} days selected</Text>
 
           {showStartPicker && (
             <DateTimePicker
@@ -197,95 +200,95 @@ export default function TripPlannerPage() {
           )}
         </MotiView>
 
-        {/* Budget Slider */}
+        {/* Budget */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 300 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 200 }}
+          style={styles.card}
         >
-          <View style={styles.budgetHeader}>
-            <Text style={styles.sectionLabel}>💰 Total Budget</Text>
-            <Text style={styles.budgetValue}>${budget}</Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="DollarSign" size={18} color="#4FC3F7" />
+            </View>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.cardTitle}>Budget</Text>
+              <Text style={styles.budgetValue}>${budget}</Text>
+            </View>
           </View>
-          
-          <View style={styles.budgetSliderContainer}>
-            {[100, 250, 500, 1000, 2000].map((value) => (
+          <View style={styles.budgetOptions}>
+            {[250, 500, 1000, 2000].map((amount) => (
               <TouchableOpacity
-                key={value}
-                style={[
-                  styles.budgetOption,
-                  budget === value && styles.budgetOptionActive,
-                ]}
-                onPress={() => setBudget(value)}
+                key={amount}
+                style={[styles.budgetChip, budget === amount && styles.budgetChipSelected]}
+                onPress={() => setBudget(amount)}
               >
-                <Text
-                  style={[
-                    styles.budgetOptionText,
-                    budget === value && styles.budgetOptionTextActive,
-                  ]}
-                >
-                  ${value}
+                <Text style={[styles.budgetChipText, budget === amount && styles.budgetChipTextSelected]}>
+                  ${amount}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.budgetHint}>
-            ~${Math.round(budget / calculateDays())} per day
-          </Text>
         </MotiView>
 
         {/* Party Size */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 400 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 250 }}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>👥 Party Size</Text>
-          <View style={styles.counterContainer}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="Users" size={18} color="#81C784" />
+            </View>
+            <Text style={styles.cardTitle}>Party Size</Text>
+          </View>
+          <View style={styles.counterRow}>
             <TouchableOpacity
               style={styles.counterButton}
               onPress={() => setPartySize(Math.max(1, partySize - 1))}
             >
-              <Icon name="Minus" size={20} color="#FFF" />
+              <Icon name="Minus" size={18} color="#FF8A80" />
             </TouchableOpacity>
-            <Text style={styles.counterValue}>{partySize} {partySize === 1 ? 'person' : 'people'}</Text>
+            <Text style={styles.counterValue}>{partySize}</Text>
             <TouchableOpacity
               style={styles.counterButton}
-              onPress={() => setPartySize(Math.min(10, partySize + 1))}
+              onPress={() => setPartySize(partySize + 1)}
             >
-              <Icon name="Plus" size={20} color="#FFF" />
+              <Icon name="Plus" size={18} color="#FF8A80" />
             </TouchableOpacity>
           </View>
         </MotiView>
 
-        {/* Dietary Restrictions */}
+        {/* Meal Types */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 500 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 300 }}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>🍽️ Dietary Restrictions</Text>
-          <View style={styles.optionsGrid}>
-            {DIETARY_OPTIONS.map((option) => (
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="Coffee" size={18} color="#FFB74D" />
+            </View>
+            <Text style={styles.cardTitle}>Meal Types</Text>
+          </View>
+          <View style={styles.chipRow}>
+            {MEAL_TYPES.map((meal) => (
               <TouchableOpacity
-                key={option.id}
+                key={meal.id}
                 style={[
-                  styles.optionChip,
-                  selectedDietary.includes(option.id) && styles.optionChipActive,
+                  styles.chip,
+                  selectedMeals.includes(meal.id) && styles.chipSelected,
                 ]}
-                onPress={() => toggleSelection(option.id, selectedDietary, setSelectedDietary)}
+                onPress={() => toggleSelection(meal.id, selectedMeals, setSelectedMeals)}
               >
-                <Text style={styles.optionEmoji}>{option.emoji}</Text>
-                <Text
-                  style={[
-                    styles.optionText,
-                    selectedDietary.includes(option.id) && styles.optionTextActive,
-                  ]}
-                >
-                  {option.label}
+                <Text style={[
+                  styles.chipText,
+                  selectedMeals.includes(meal.id) && styles.chipTextSelected,
+                ]}>
+                  {meal.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -296,60 +299,64 @@ export default function TripPlannerPage() {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 600 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 350 }}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>🌮 Cuisine Preferences</Text>
-          <View style={styles.optionsGrid}>
-            {CUISINE_OPTIONS.map((option) => (
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="UtensilsCrossed" size={18} color="#E57373" />
+            </View>
+            <Text style={styles.cardTitle}>Cuisine Preferences</Text>
+          </View>
+          <View style={styles.chipRow}>
+            {CUISINE_OPTIONS.map((cuisine) => (
               <TouchableOpacity
-                key={option.id}
+                key={cuisine.id}
                 style={[
-                  styles.optionChip,
-                  selectedCuisines.includes(option.id) && styles.optionChipActive,
+                  styles.chip,
+                  selectedCuisines.includes(cuisine.id) && styles.chipSelected,
                 ]}
-                onPress={() => toggleSelection(option.id, selectedCuisines, setSelectedCuisines)}
+                onPress={() => toggleSelection(cuisine.id, selectedCuisines, setSelectedCuisines)}
               >
-                <Text style={styles.optionEmoji}>{option.emoji}</Text>
-                <Text
-                  style={[
-                    styles.optionText,
-                    selectedCuisines.includes(option.id) && styles.optionTextActive,
-                  ]}
-                >
-                  {option.label}
+                <Text style={[
+                  styles.chipText,
+                  selectedCuisines.includes(cuisine.id) && styles.chipTextSelected,
+                ]}>
+                  {cuisine.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </MotiView>
 
-        {/* Meal Types */}
+        {/* Dietary Restrictions */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 700 }}
-          style={styles.section}
+          transition={{ type: 'spring', delay: 400 }}
+          style={styles.card}
         >
-          <Text style={styles.sectionLabel}>🍳 Meals to Include</Text>
-          <View style={styles.mealTypesRow}>
-            {MEAL_TYPES.map((meal) => (
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Icon name="Leaf" size={18} color="#AED581" />
+            </View>
+            <Text style={styles.cardTitle}>Dietary Restrictions</Text>
+          </View>
+          <View style={styles.chipRow}>
+            {DIETARY_OPTIONS.map((diet) => (
               <TouchableOpacity
-                key={meal.id}
+                key={diet.id}
                 style={[
-                  styles.mealTypeChip,
-                  selectedMeals.includes(meal.id) && styles.mealTypeChipActive,
+                  styles.chip,
+                  selectedDietary.includes(diet.id) && styles.chipSelected,
                 ]}
-                onPress={() => toggleSelection(meal.id, selectedMeals, setSelectedMeals)}
+                onPress={() => toggleSelection(diet.id, selectedDietary, setSelectedDietary)}
               >
-                <Text style={styles.mealTypeEmoji}>{meal.emoji}</Text>
-                <Text
-                  style={[
-                    styles.mealTypeText,
-                    selectedMeals.includes(meal.id) && styles.mealTypeTextActive,
-                  ]}
-                >
-                  {meal.label}
+                <Text style={[
+                  styles.chipText,
+                  selectedDietary.includes(diet.id) && styles.chipTextSelected,
+                ]}>
+                  {diet.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -358,10 +365,10 @@ export default function TripPlannerPage() {
 
         {/* Generate Button */}
         <MotiView
-          from={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 800 }}
-          style={styles.buttonContainer}
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 450 }}
+          style={{ marginTop: 8 }}
         >
           <TouchableOpacity
             style={[styles.generateButton, !isFormValid && styles.generateButtonDisabled]}
@@ -369,17 +376,13 @@ export default function TripPlannerPage() {
             disabled={!isFormValid}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={isFormValid ? ['#FF3B30', '#FF6B6B'] : ['#CCC', '#999']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.generateGradient}
-            >
-              <Icon name="Sparkles" size={24} color="#FFF" />
-              <Text style={styles.generateButtonText}>Generate Itinerary</Text>
-            </LinearGradient>
+            <Text style={styles.generateButtonText}>Generate Itinerary</Text>
+            <Icon name="Sparkles" size={20} color="#FFF" />
           </TouchableOpacity>
         </MotiView>
+
+        {/* Bottom Spacing */}
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -388,21 +391,22 @@ export default function TripPlannerPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#F9FAFB',
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 20,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 15,
@@ -413,221 +417,180 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingBottom: 120,
+    padding: 16,
   },
-  section: {
-    marginBottom: 28,
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F5F5F7',
   },
-  sectionLabel: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
-  inputContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
+    marginBottom: 16,
     gap: 12,
   },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
   input: {
-    flex: 1,
     fontSize: 16,
     color: '#1A1A1A',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
   },
-  dateButton: {
+  dateBox: {
     flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
-  dateLabel: {
-    fontSize: 13,
+  dateBoxLabel: {
+    fontSize: 12,
     color: '#8E8E93',
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 4,
   },
-  dateValue: {
-    fontSize: 18,
-    fontWeight: '700',
+  dateBoxValue: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#1A1A1A',
   },
-  daysCount: {
-    fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '600',
-    marginTop: 8,
+  daysIndicator: {
+    fontSize: 13,
+    color: '#9C88FF',
+    fontWeight: '500',
+    marginTop: 12,
     textAlign: 'center',
-  },
-  budgetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
   },
   budgetValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FF3B30',
-  },
-  budgetSliderContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  budgetOption: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
-  },
-  budgetOptionActive: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
-  },
-  budgetOptionText: {
-    fontSize: 14,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: '#4FC3F7',
   },
-  budgetOptionTextActive: {
-    color: '#FFF',
-  },
-  budgetHint: {
-    fontSize: 13,
-    color: '#8E8E93',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  counterContainer: {
+  budgetOptions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    gap: 24,
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
-  },
-  counterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  counterValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    minWidth: 100,
-    textAlign: 'center',
-  },
-  optionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
-  optionChip: {
-    flexDirection: 'row',
+  budgetChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
   },
-  optionChipActive: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
+  budgetChipSelected: {
+    backgroundColor: '#E3F2FD',
+    borderColor: '#4FC3F7',
   },
-  optionEmoji: {
-    fontSize: 16,
-  },
-  optionText: {
+  budgetChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: '#8E8E93',
   },
-  optionTextActive: {
-    color: '#FFF',
+  budgetChipTextSelected: {
+    color: '#4FC3F7',
   },
-  mealTypesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  mealTypeChip: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: '#F0F0F0',
-  },
-  mealTypeChipActive: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
-  },
-  mealTypeEmoji: {
-    fontSize: 32,
-  },
-  mealTypeText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  mealTypeTextActive: {
-    color: '#FFF',
-  },
-  buttonContainer: {
-    marginTop: 12,
-  },
-  generateButton: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  generateButtonDisabled: {
-    shadowOpacity: 0,
-  },
-  generateGradient: {
+  counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 24,
+  },
+  counterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  counterValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  chipSelected: {
+    backgroundColor: '#FFE8E8',
+    borderColor: '#FF8A80',
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  chipTextSelected: {
+    color: '#FF8A80',
+    fontWeight: '600',
+  },
+  generateButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FF8A80',
+    borderRadius: 16,
     paddingVertical: 18,
-    gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#FF8A80',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  generateButtonDisabled: {
+    backgroundColor: '#E0E0E0',
+    shadowOpacity: 0,
   },
   generateButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFF',
   },

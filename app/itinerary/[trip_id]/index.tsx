@@ -71,7 +71,9 @@ export default function ItineraryScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorEmoji}>😕</Text>
+          <View style={styles.errorIconCircle}>
+            <Icon name="AlertCircle" size={32} color="#FF8A80" />
+          </View>
           <Text style={styles.errorText}>Itinerary not found</Text>
           <TouchableOpacity
             style={styles.errorButton}
@@ -255,7 +257,9 @@ export default function ItineraryScreen() {
           transition={{ type: 'spring' }}
           style={styles.themeCard}
         >
-          <Icon name="Sparkles" size={20} color="#FF3B30" />
+          <View style={styles.themeIconCircle}>
+            <Icon name="Sparkles" size={16} color="#9C88FF" />
+          </View>
           <Text style={styles.themeText}>{currentDay.theme}</Text>
         </MotiView>
 
@@ -278,10 +282,16 @@ export default function ItineraryScreen() {
             {/* Meal Header */}
             <View style={styles.mealHeader}>
               <View style={styles.mealTimeContainer}>
-                <View style={styles.mealIconCircle}>
-                  <Text style={styles.mealEmoji}>
-                    {meal.type === 'breakfast' ? '🍳' : meal.type === 'lunch' ? '🍱' : '🍽️'}
-                  </Text>
+                <View style={[
+                  styles.mealIconCircle,
+                  meal.type === 'breakfast' ? styles.mealIconBreakfast :
+                  meal.type === 'lunch' ? styles.mealIconLunch : styles.mealIconDinner
+                ]}>
+                  <Icon 
+                    name={meal.type === 'breakfast' ? 'Coffee' : meal.type === 'lunch' ? 'UtensilsCrossed' : 'Soup'}
+                    size={18}
+                    color={meal.type === 'breakfast' ? '#FFB74D' : meal.type === 'lunch' ? '#81C784' : '#E57373'}
+                  />
                 </View>
                 <View>
                   <Text style={styles.mealType}>
@@ -291,7 +301,8 @@ export default function ItineraryScreen() {
                 </View>
               </View>
               <View style={styles.costBadge}>
-                <Text style={styles.costText}>${meal.estimatedCost}</Text>
+                <Icon name="DollarSign" size={14} color="#4FC3F7" />
+                <Text style={styles.costText}>{meal.estimatedCost}</Text>
               </View>
             </View>
 
@@ -531,7 +542,7 @@ export default function ItineraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#F9FAFB',
   },
   safeArea: {
     backgroundColor: '#FFF',
@@ -552,13 +563,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  errorEmoji: {
-    fontSize: 64,
+  errorIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFE8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
   },
   errorText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 24,
   },
@@ -692,27 +708,27 @@ const styles = StyleSheet.create({
   },
   dayTab: {
     backgroundColor: '#FFF',
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#F0F0F0',
-    width: 70,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    width: 68,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
   dayTabActive: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
-    shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: '#FFE8E8',
+    borderColor: '#FF8A80',
+    shadowColor: '#FF8A80',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   dayTabNumber: {
     fontSize: 24,
@@ -721,7 +737,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dayTabNumberActive: {
-    color: '#FFF',
+    color: '#FF8A80',
   },
   dayTabLabel: {
     fontSize: 10,
@@ -732,7 +748,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   dayTabLabelActive: {
-    color: 'rgba(255,255,255,0.8)',
+    color: '#FF8A80',
   },
   dayTabDate: {
     fontSize: 12,
@@ -740,7 +756,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   dayTabDateActive: {
-    color: '#FFF',
+    color: '#FF8A80',
   },
   activeDot: {
     position: 'absolute',
@@ -748,7 +764,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FF8A80',
   },
   scrollView: {
     flexGrow: 1,
@@ -762,18 +778,31 @@ const styles = StyleSheet.create({
   themeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.05)',
+    backgroundColor: '#FFF',
     borderRadius: 16,
-    padding: 12,
-    gap: 10,
+    padding: 14,
+    gap: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.1)',
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  themeIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   themeText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FF3B30',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
   mealCard: {
     backgroundColor: '#FFF',
@@ -799,15 +828,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mealIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F8F9FB',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mealEmoji: {
-    fontSize: 24,
+  mealIconBreakfast: {
+    backgroundColor: '#FFF3E0',
+  },
+  mealIconLunch: {
+    backgroundColor: '#E8F5E9',
+  },
+  mealIconDinner: {
+    backgroundColor: '#FFE8E8',
   },
   mealType: {
     fontSize: 17,
@@ -821,15 +855,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   costBadge: {
-    backgroundColor: '#34C759',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 12,
+    gap: 4,
   },
   costText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#4FC3F7',
   },
   restaurantImage: {
     width: '100%',
