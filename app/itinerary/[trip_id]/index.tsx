@@ -694,11 +694,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'right',
   },
+  dayTabsContainer: {
+    backgroundColor: '#F8F9FB',
+    paddingTop: 8,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+    zIndex: 10,
+  },
   dayTabs: {
     paddingHorizontal: 20,
     gap: 12,
-    marginBottom: 8,
-    paddingVertical: 10,
   },
   dayTab: {
     backgroundColor: '#FFF',
