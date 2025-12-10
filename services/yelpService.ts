@@ -101,10 +101,10 @@ export class YelpService {
       }
 
       // Get business details
-      const details = await this.getBusinessDetails(business.id);
+      const details = await this.getBusinessDetailsPrivate(business.id);
       
       // Get reviews for AI insights
-      const reviews = await this.getReviews(business.id);
+      const reviews = await this.getReviewsPrivate(business.id);
 
       return {
         summary: this.generateSummary(details, reviews),
@@ -150,7 +150,7 @@ export class YelpService {
   /**
    * Get detailed business information
    */
-  private async getBusinessDetails(businessId: string): Promise<any> {
+  async getBusinessDetails(businessId: string): Promise<any> {
     try {
       const response = await axios.get(`${this.baseUrl}/businesses/${businessId}`, {
         headers: {
@@ -168,7 +168,7 @@ export class YelpService {
   /**
    * Get business reviews
    */
-  private async getReviews(businessId: string): Promise<any[]> {
+  async getReviews(businessId: string): Promise<any[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/businesses/${businessId}/reviews`, {
         headers: {
@@ -184,6 +184,20 @@ export class YelpService {
       console.error('Yelp reviews error:', error);
       return [];
     }
+  }
+
+  /**
+   * Get detailed business information (private method for backward compatibility)
+   */
+  private async getBusinessDetailsPrivate(businessId: string): Promise<any> {
+    return this.getBusinessDetails(businessId);
+  }
+
+  /**
+   * Get business reviews (private method for backward compatibility)
+   */
+  private async getReviewsPrivate(businessId: string): Promise<any[]> {
+    return this.getReviews(businessId);
   }
 
   /**

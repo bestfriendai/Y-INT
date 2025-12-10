@@ -10,19 +10,27 @@ import {
   Platform,
   Keyboard,
   Image,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Icon from '@/components/LucideIcons';
 import { MotiView, MotiText } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CostEstimatorService, CostComparison } from '@/services/costEstimatorService';
+import * as Location from 'expo-location';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  comparisonData?: CostComparison;
 }
+
+const costEstimatorService = new CostEstimatorService();
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ChatPage() {
   const router = useRouter();
@@ -58,37 +66,335 @@ export default function ChatPage() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = inputText.trim();
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(userMessage.text);
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+    // Check if this is a cost estimator request
+    const costEstimateMatch = parseCostEstimateRequest(userInput);
+    
+    if (costEstimateMatch) {
+      // Handle cost estimator
+      try {
+        let location: { lat: number; lng: number } | undefined;
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const userLocation = await Location.getCurrentPositionAsync({});
+            location = {
+              lat: userLocation.coords.latitude,
+              lng: userLocation.coords.longitude,
+            };
+          }
+        } catch (error) {
+          console.log('Location permission denied or error');
+        }
+
+        const comparison = await costEstimatorService.compareOptions(
+          costEstimateMatch.option1,
+          costEstimateMatch.option2,
+          costEstimateMatch.budget,
+          location
+        );
+
+        if (comparison) {
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: generateComparisonResponse(comparison),
+            sender: 'ai',
+            timestamp: new Date(),
+            comparisonData: comparison,
+          };
+          setMessages((prev) => [...prev, aiMessage]);
+        } else {
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: 'I couldn\'t find one or both restaurants. Please check the names and try again!',
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, aiMessage]);
+        }
+      } catch (error) {
+        console.error('Cost estimator error:', error);
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Sorry, I encountered an error while comparing restaurants. Please try again!',
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }
       setIsTyping(false);
-    }, 1500);
+    } else {
+      // Regular AI response
+      setTimeout(() => {
+        const aiResponse = generateAIResponse(userInput);
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: aiResponse,
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+        setIsTyping(false);
+      }, 1500);
+    }
+  };
+
+  /**
+   * Parse cost estimate request from user input
+   * Supports formats like:
+   * - "compare restaurant1 vs restaurant2 for $25"
+   * - "which is better restaurant1 or restaurant2 for 25 dollars"
+   * - "cost estimator: option1 vs option2 budget 25"
+   */
+  const parseCostEstimateRequest = (input: string): { option1: string; option2: string; budget: number } | null => {
+    const lowerInput = input.toLowerCase();
+    
+    // Check for cost estimator keywords
+    const hasCostKeywords = 
+      lowerInput.includes('compare') || 
+      lowerInput.includes('cost') || 
+      lowerInput.includes('estimator') ||
+      lowerInput.includes('which is better') ||
+      lowerInput.includes('vs') ||
+      lowerInput.includes('versus');
+
+    if (!hasCostKeywords) {
+      return null;
+    }
+
+    // Extract budget
+    const budgetMatch = input.match(/\$?(\d+)/);
+    if (!budgetMatch) {
+      return null;
+    }
+    const budget = parseFloat(budgetMatch[1]);
+
+    // Extract two options
+    const vsPatterns = [
+      /compare\s+(.+?)\s+(?:vs|versus|or)\s+(.+?)\s+(?:for|with|budget)/i,
+      /(.+?)\s+(?:vs|versus|or)\s+(.+?)\s+(?:for|with|budget)\s+\$?(\d+)/i,
+      /which is better\s+(.+?)\s+or\s+(.+?)\s+(?:for|with)/i,
+      /cost estimator[:\s]+(.+?)\s+vs\s+(.+?)\s+budget\s+(\d+)/i,
+    ];
+
+    for (const pattern of vsPatterns) {
+      const match = input.match(pattern);
+      if (match) {
+        return {
+          option1: match[1].trim(),
+          option2: match[2].trim(),
+          budget,
+        };
+      }
+    }
+
+    // Fallback: try to split by common separators
+    const separators = [' vs ', ' versus ', ' or '];
+    for (const sep of separators) {
+      if (lowerInput.includes(sep)) {
+        const parts = input.split(sep);
+        if (parts.length >= 2) {
+          return {
+            option1: parts[0].replace(/compare|cost estimator/gi, '').trim(),
+            option2: parts[1].replace(/for|with|budget/gi, '').replace(/\$?\d+/g, '').trim(),
+            budget,
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const generateComparisonResponse = (comparison: CostComparison): string => {
+    return 'Cost Comparison Results\n\nSee the detailed comparison table below!';
   };
 
   const generateAIResponse = (userQuestion: string): string => {
     const lowerQuestion = userQuestion.toLowerCase();
 
-    if (lowerQuestion.includes('restaurant') || lowerQuestion.includes('food')) {
-      return 'I can help you discover amazing restaurants! Try scanning a restaurant with the camera button, and I\'ll provide:\n\n• Detailed menu information\n• Popular dishes & reviews\n• Dietary labels (Vegan, Gluten-Free, etc.)\n• Personalized recommendations based on your preferences\n\nWhat type of cuisine are you interested in?';
+    if (lowerQuestion.includes('cost') || lowerQuestion.includes('estimator') || lowerQuestion.includes('compare') || lowerQuestion.includes('budget')) {
+      return 'Cost Estimator\n\nI can help you compare two restaurants based on calories, quantity, and value!\n\nTry this format:\n"Compare Restaurant1 vs Restaurant2 for $25"\n\nor\n\n"Which is better: Pizza Place or Burger Joint for 25 dollars"\n\nI\'ll analyze both options and show you which gives better value based on:\n• Calories per dollar\n• Portion sizes\n• Overall value score\n\nWhat would you like to compare?';
+    } else if (lowerQuestion.includes('restaurant') || lowerQuestion.includes('food')) {
+      return 'I can help you discover amazing restaurants! Try scanning a restaurant with the camera button, and I\'ll provide:\n\n• Detailed menu information\n• Popular dishes & reviews\n• Dietary labels (Vegan, Gluten-Free, etc.)\n• Personalized recommendations\n• **Cost comparisons** (try: "compare X vs Y for $25")\n\nWhat type of cuisine are you interested in?';
     } else if (lowerQuestion.includes('vegan') || lowerQuestion.includes('dietary')) {
       return 'Great question about dietary preferences! I can:\n\n• Filter restaurants by dietary needs\n• Identify vegan, vegetarian, gluten-free options\n• Highlight allergen information\n• Suggest dishes that match your diet\n\nWould you like me to find restaurants with specific dietary options nearby?';
     } else if (lowerQuestion.includes('popular') || lowerQuestion.includes('dish')) {
       return 'I analyze thousands of reviews to identify:\n\n• Most popular dishes at each restaurant\n• Customer favorites & hidden gems\n• Trending menu items\n• Signature dishes worth trying\n\nScan a restaurant to see its top dishes instantly!';
     } else if (lowerQuestion.includes('hello') || lowerQuestion.includes('hi')) {
-      return 'Hello! 👋 I\'m here to help you discover the best dining experiences. You can:\n\n• Scan restaurants with AR camera\n• Get AI-powered recommendations\n• Save your favorites\n• Explore menus & reviews\n\nHow can I assist you today?';
+      return 'Hello! I\'m here to help you discover the best dining experiences. You can:\n\n• Scan restaurants with AR camera\n• Get AI-powered recommendations\n• Save your favorites\n• Compare restaurant costs & value\n• Explore menus & reviews\n\nTry the cost estimator: "Compare Restaurant A vs Restaurant B for $25"\n\nHow can I assist you today?';
     } else {
-      return 'That\'s an interesting question! Here\'s what I can help you with:\n\n• Restaurant recommendations & details\n• Menu items & popular dishes\n• Dietary preferences & filters\n• Reviews & ratings analysis\n• Personalized suggestions\n\nFeel free to ask me anything food-related, or use the camera to scan a restaurant!';
+      return 'That\'s an interesting question! Here\'s what I can help you with:\n\n• Restaurant recommendations & details\n• Menu items & popular dishes\n• Dietary preferences & filters\n• **Cost comparisons** (try: "compare X vs Y for $25")\n• Reviews & ratings analysis\n• Personalized suggestions\n\nFeel free to ask me anything food-related, or use the camera to scan a restaurant!';
     }
+  };
+
+  const renderComparisonTable = (comparison: CostComparison) => {
+    const { option1, option2, winner, comparison: comp, budget } = comparison;
+    
+    return (
+      <View style={styles.comparisonContainer}>
+        <View style={styles.comparisonHeader}>
+          <View style={styles.titleRow}>
+            <Icon name="DollarSign" size={18} color="#1A1A1A" />
+            <Text style={styles.comparisonTitle}>Cost Comparison for ${budget}</Text>
+          </View>
+        </View>
+
+        {/* Comparison Table - Scrollable */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableScrollView}>
+          <View style={styles.tableContainer}>
+            {/* Header Row */}
+            <View style={styles.tableRow}>
+              <View style={[styles.tableCell, styles.tableHeader, styles.metricColumn]}>
+                <Text style={styles.tableHeaderText}>Metric</Text>
+              </View>
+              <View style={[styles.tableCell, styles.tableHeader, styles.restaurantColumn]}>
+                <View style={styles.restaurantHeader}>
+                  <Text 
+                    style={[styles.tableHeaderText, winner === 'option1' && styles.winnerText]}
+                    numberOfLines={2}
+                  >
+                    {option1.restaurantName}
+                  </Text>
+                  {winner === 'option1' && (
+                    <View style={styles.winnerIcon}>
+                      <Icon name="Award" size={14} color="#FF8A80" />
+                    </View>
+                  )}
+                </View>
+              </View>
+              <View style={[styles.tableCell, styles.tableHeader, styles.restaurantColumn]}>
+                <View style={styles.restaurantHeader}>
+                  <Text 
+                    style={[styles.tableHeaderText, winner === 'option2' && styles.winnerText]}
+                    numberOfLines={2}
+                  >
+                    {option2.restaurantName}
+                  </Text>
+                  {winner === 'option2' && (
+                    <View style={styles.winnerIcon}>
+                      <Icon name="Award" size={14} color="#FF8A80" />
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Cost Row */}
+            <View style={styles.tableRow}>
+              <View style={[styles.tableCell, styles.tableLabel, styles.metricColumn]}>
+                <View style={styles.labelWithIcon}>
+                  <Icon name="DollarSign" size={14} color="#8E8E93" />
+                  <Text style={styles.tableLabelText}>Cost</Text>
+                </View>
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn]}>
+                <Text style={styles.tableValueText}>${option1.estimatedCost.toFixed(2)}</Text>
+                <Text style={styles.tableSubtext}>{option1.priceLevel}</Text>
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn]}>
+                <Text style={styles.tableValueText}>${option2.estimatedCost.toFixed(2)}</Text>
+                <Text style={styles.tableSubtext}>{option2.priceLevel}</Text>
+              </View>
+            </View>
+
+            {/* Calories Row */}
+            <View style={[styles.tableRow, comp.betterCalories === 'option1' && styles.highlightRow]}>
+              <View style={[styles.tableCell, styles.tableLabel, styles.metricColumn]}>
+                <View style={styles.labelWithIcon}>
+                  <Icon name="Flame" size={14} color="#8E8E93" />
+                  <Text style={styles.tableLabelText}>Calories</Text>
+                </View>
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, comp.betterCalories === 'option1' && styles.betterCell]}>
+                <Text style={styles.tableValueText}>{option1.estimatedCalories}</Text>
+                {comp.betterCalories === 'option1' && (
+                  <View style={styles.bestBadge}>
+                    <Icon name="Check" size={10} color="#34C759" />
+                    <Text style={styles.betterBadgeText}>Best</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, comp.betterCalories === 'option2' && styles.betterCell]}>
+                <Text style={styles.tableValueText}>{option2.estimatedCalories}</Text>
+                {comp.betterCalories === 'option2' && (
+                  <View style={styles.bestBadge}>
+                    <Icon name="Check" size={10} color="#34C759" />
+                    <Text style={styles.betterBadgeText}>Best</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Quantity Row */}
+            <View style={[styles.tableRow, comp.betterQuantity === 'option1' && styles.highlightRow]}>
+              <View style={[styles.tableCell, styles.tableLabel, styles.metricColumn]}>
+                <View style={styles.labelWithIcon}>
+                  <Icon name="Package" size={14} color="#8E8E93" />
+                  <Text style={styles.tableLabelText}>Quantity</Text>
+                </View>
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, comp.betterQuantity === 'option1' && styles.betterCell]}>
+                <Text style={styles.tableValueText} numberOfLines={2}>{option1.estimatedQuantity}</Text>
+                {comp.betterQuantity === 'option1' && (
+                  <View style={styles.bestBadge}>
+                    <Icon name="Check" size={10} color="#34C759" />
+                    <Text style={styles.betterBadgeText}>Best</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, comp.betterQuantity === 'option2' && styles.betterCell]}>
+                <Text style={styles.tableValueText} numberOfLines={2}>{option2.estimatedQuantity}</Text>
+                {comp.betterQuantity === 'option2' && (
+                  <View style={styles.bestBadge}>
+                    <Icon name="Check" size={10} color="#34C759" />
+                    <Text style={styles.betterBadgeText}>Best</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Value Score Row */}
+            <View style={[styles.tableRow, styles.valueRow]}>
+              <View style={[styles.tableCell, styles.tableLabel, styles.metricColumn]}>
+                <View style={styles.labelWithIcon}>
+                  <Icon name="Star" size={14} color="#8E8E93" />
+                  <Text style={styles.tableLabelText}>Value Score</Text>
+                </View>
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, winner === 'option1' && styles.betterCell]}>
+                <Text style={[styles.tableValueText, styles.valueScore]}>{option1.valueScore}/100</Text>
+                {winner === 'option1' && (
+                  <View style={styles.winnerBadge}>
+                    <Text style={styles.winnerBadgeText}>Winner!</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.tableCell, styles.tableValue, styles.restaurantColumn, winner === 'option2' && styles.betterCell]}>
+                <Text style={[styles.tableValueText, styles.valueScore]}>{option2.valueScore}/100</Text>
+                {winner === 'option2' && (
+                  <View style={styles.winnerBadge}>
+                    <Text style={styles.winnerBadgeText}>Winner!</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Personalized Explanation */}
+        <View style={styles.explanationContainer}>
+          <View style={styles.explanationHeader}>
+            <Icon name="Lightbulb" size={16} color="#8B5CF6" />
+            <Text style={styles.explanationTitle}>Recommendation</Text>
+          </View>
+          <Text style={styles.explanationText}>{comp.personalizedReason.replace(/🏆|💡/g, '').trim()}</Text>
+        </View>
+      </View>
+    );
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -134,6 +440,13 @@ export default function ChatPage() {
           >
             {item.text}
           </Text>
+          
+          {/* Render comparison table if available */}
+          {item.comparisonData && (
+            <View style={styles.comparisonWrapper}>
+              {renderComparisonTable(item.comparisonData)}
+            </View>
+          )}
         </View>
       </MotiView>
     );
@@ -475,6 +788,177 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  comparisonWrapper: {
+    marginTop: 16,
+  },
+  comparisonContainer: {
+    backgroundColor: '#F8F9FB',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  comparisonHeader: {
+    marginBottom: 16,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  comparisonTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  tableScrollView: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  tableContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    minWidth: SCREEN_WIDTH * 0.9, // Use screen width for better responsiveness
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    minHeight: 70, // Increased for better spacing
+  },
+  highlightRow: {
+    backgroundColor: '#FFF9E6',
+  },
+  tableCell: {
+    padding: 14,
+    justifyContent: 'center',
+  },
+  metricColumn: {
+    width: 130,
+    minWidth: 130,
+    maxWidth: 130,
+  },
+  restaurantColumn: {
+    width: Math.max(180, (SCREEN_WIDTH - 130) / 2), // Responsive based on screen width
+    minWidth: 180,
+    flex: 1,
+  },
+  tableHeader: {
+    backgroundColor: '#F8F9FB',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E5E5EA',
+  },
+  restaurantHeader: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  tableHeaderText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    textAlign: 'center',
+  },
+  winnerText: {
+    color: '#FF8A80',
+  },
+  winnerIcon: {
+    marginTop: 2,
+  },
+  tableLabel: {
+    backgroundColor: '#FAFAFA',
+  },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tableLabelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  tableValue: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  tableValueText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    textAlign: 'center',
+  },
+  tableSubtext: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  betterCell: {
+    backgroundColor: '#E8F5E9',
+  },
+  bestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: '#C8E6C9',
+    borderRadius: 8,
+  },
+  betterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#34C759',
+  },
+  winnerBadge: {
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: '#FF8A80',
+    borderRadius: 8,
+  },
+  winnerBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  valueRow: {
+    backgroundColor: '#F0F7FF',
+    borderBottomWidth: 0,
+  },
+  valueScore: {
+    fontSize: 16,
+    color: '#007AFF',
+  },
+  explanationContainer: {
+    marginTop: 16,
+    padding: 14,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#8B5CF6',
+  },
+  explanationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  explanationTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  explanationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#1A1A1A',
   },
 });
 
