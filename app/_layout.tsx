@@ -5,6 +5,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { SavedItinerariesProvider } from '@/context/SavedItinerariesContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -15,6 +16,7 @@ export default function RootLayout() {
 
   return (
     <FavoritesProvider>
+    <SavedItinerariesProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack
           screenOptions={{
@@ -80,6 +82,7 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+    </SavedItinerariesProvider>
     </FavoritesProvider>
   );
 }

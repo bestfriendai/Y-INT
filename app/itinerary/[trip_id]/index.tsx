@@ -20,6 +20,7 @@ import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabaseItineraryService } from '@/services/supabaseItineraryService';
 import { TripItinerary } from '@/types/itinerary';
+import { useSavedItineraries } from '@/context/SavedItinerariesContext';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +33,7 @@ export default function ItineraryScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [expandedMeals, setExpandedMeals] = useState<{ [key: string]: boolean }>({});
+  const { addSavedItinerary } = useSavedItineraries();
 
   useEffect(() => {
     loadItinerary();
@@ -97,16 +99,19 @@ export default function ItineraryScreen() {
     
     setIsSaving(true);
     try {
-      console.log('💾 Finalizing itinerary...');
+      console.log('💾 Saving itinerary...');
       
-      // Update status to confirmed
+      // Update status to confirmed in Supabase
       const success = await supabaseItineraryService.updateTripStatus(itinerary.id, 'confirmed');
       
       if (success) {
         const updatedItinerary = { ...itinerary, status: 'confirmed' as const };
         setItinerary(updatedItinerary);
-        setShowSaveSuccess(true);
         
+        // Save to saved itineraries context
+        await addSavedItinerary(updatedItinerary);
+        
+        setShowSaveSuccess(true);
         console.log('✅ Itinerary saved & confirmed!');
         
         // Hide success message after 3 seconds
@@ -492,7 +497,7 @@ export default function ItineraryScreen() {
                 </>
               ) : (
                 <>
-                  <Icon name="Check" size={24} color="#FFF" />
+                  <Icon name="Save" size={24} color="#FFF" />
                   <Text style={styles.saveButtonText}>Save Itinerary</Text>
                 </>
               )}
