@@ -31,6 +31,7 @@ export default function ItineraryScreen() {
   const [selectedDay, setSelectedDay] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
   const [expandedMeals, setExpandedMeals] = useState<{ [key: string]: boolean }>({});
   const { addSavedItinerary, getSavedItineraryById } = useSavedItineraries();
 
@@ -123,6 +124,12 @@ export default function ItineraryScreen() {
         await addSavedItinerary(updatedItinerary);
         
         console.log('✅ Itinerary saved & confirmed!');
+        
+        // Show saved toast
+        setShowSavedToast(true);
+        setTimeout(() => {
+          setShowSavedToast(false);
+        }, 2000);
       }
     } catch (error) {
       console.error('❌ Error saving itinerary:', error);
@@ -469,8 +476,8 @@ export default function ItineraryScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Floating Save Button */}
-      {itinerary.status === 'draft' && (
+      {/* Floating Save Button or Saved Toast */}
+      {itinerary.status === 'draft' && !showSavedToast && (
         <MotiView
           from={{ opacity: 0, translateY: 100 }}
           animate={{ opacity: 1, translateY: 0 }}
@@ -508,6 +515,29 @@ export default function ItineraryScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
+        </MotiView>
+      )}
+
+      {/* Saved Toast */}
+      {showSavedToast && (
+        <MotiView
+          from={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ type: 'timing', duration: 300 }}
+          style={styles.saveButtonContainer}
+        >
+          <View style={styles.savedToast}>
+            <LinearGradient
+              colors={['#34C759', '#30D158']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.savedToastGradient}
+            >
+              <Icon name="Check" size={24} color="#FFF" />
+              <Text style={styles.savedToastText}>Saved</Text>
+            </LinearGradient>
+          </View>
         </MotiView>
       )}
     </View>
@@ -1034,6 +1064,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   saveButtonText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 0.5,
+  },
+  savedToast: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#34C759',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  savedToastGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  savedToastText: {
     fontSize: 18,
     fontWeight: '800',
     color: '#FFF',
