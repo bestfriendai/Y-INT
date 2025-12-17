@@ -17,14 +17,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <FavoritesProvider>
+    <FavoritesProvider>
       <SavedItinerariesProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen 
@@ -90,11 +90,11 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
         </SavedItinerariesProvider>
-        </FavoritesProvider>
+    </FavoritesProvider>
     </GestureHandlerRootView>
   );
 }

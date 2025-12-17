@@ -330,6 +330,72 @@ export default function ChatPage() {
           </View>
         </View>
 
+        {/* Detailed Cards (swipe between restaurants) */}
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.comparisonCardsContainer}
+        >
+          {[{ data: option1, key: 'option1' }, { data: option2, key: 'option2' }].map(({ data, key }) => (
+            <View key={key} style={styles.comparisonCard}>
+              <View style={styles.cardHeaderRow}>
+                <View>
+                  {data.dishName ? (
+                    <Text style={styles.cardDish}>{data.dishName}</Text>
+                  ) : null}
+                  <Text style={styles.cardTitle} numberOfLines={1}>{data.restaurantName}</Text>
+                  <Text style={styles.cardPriceLevel}>{data.priceLevel || 'Price info'}</Text>
+                </View>
+                {winner === key && (
+                  <View style={styles.cardWinnerBadge}>
+                    <Icon name="Award" size={16} color="#FF3B30" />
+                    <Text style={styles.cardWinnerText}>Winner</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.cardTagsRow}>
+                <View style={styles.cardTag}>
+                  <Icon name="DollarSign" size={14} color="#FF3B30" />
+                  <Text style={styles.cardTagText}>${data.estimatedCost.toFixed(2)}</Text>
+                </View>
+                <View style={styles.cardTag}>
+                  <Icon name="Flame" size={14} color="#FF8A00" />
+                  <Text style={styles.cardTagText}>{data.estimatedCalories} cal</Text>
+                </View>
+                <View style={styles.cardTag}>
+                  <Icon name="Package" size={14} color="#34C759" />
+                  <Text style={styles.cardTagText}>{data.estimatedQuantity} qty</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardMetricsRow}>
+                <View style={styles.cardMetric}>
+                  <Text style={styles.cardMetricLabel}>Value Score</Text>
+                  <Text style={styles.cardMetricValue}>{data.valueScore.toFixed(1)}/10</Text>
+                </View>
+              </View>
+
+              {data.summary ? (
+                <View style={styles.cardSection}>
+                  <Text style={styles.cardSectionTitle}>Summary</Text>
+                  <Text style={styles.cardSectionText}>{data.summary}</Text>
+                </View>
+              ) : null}
+
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Personalized reason (overall) */}
+        {comp.personalizedReason ? (
+          <View style={styles.cardSection}>
+            <Text style={styles.cardSectionTitle}>Why this fits you</Text>
+            <Text style={styles.cardSectionText}>{comp.personalizedReason}</Text>
+          </View>
+        ) : null}
+
         {/* Comparison Table - Scrollable */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableScrollView}>
           <View style={styles.tableContainer}>
@@ -932,6 +998,120 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E5EA',
     minWidth: SCREEN_WIDTH * 0.9, // Use screen width for better responsiveness
+  },
+  comparisonCardsContainer: {
+    paddingHorizontal: 0,
+    gap: 12,
+  },
+  comparisonCard: {
+    width: SCREEN_WIDTH * 0.9,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 16,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  cardDish: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8E8E93',
+    marginBottom: 2,
+  },
+  cardPriceLevel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#34C759',
+    marginTop: 4,
+  },
+  cardWinnerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.2)',
+  },
+  cardWinnerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FF3B30',
+  },
+  cardTagsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  cardTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F7F7F7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  cardTagText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  cardMetricsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 10,
+  },
+  cardMetric: {
+    flex: 1,
+    backgroundColor: '#F8F9FB',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#EFEFF4',
+  },
+  cardMetricLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8E8E93',
+    marginBottom: 6,
+  },
+  cardMetricValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  cardSection: {
+    marginTop: 8,
+  },
+  cardSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  cardSectionText: {
+    fontSize: 14,
+    color: '#444',
+    lineHeight: 20,
   },
   tableRow: {
     flexDirection: 'row',

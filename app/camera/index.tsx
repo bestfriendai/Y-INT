@@ -355,11 +355,11 @@ export default function ARCameraScreen(): React.JSX.Element {
               onPress={handleTapFocus}
               style={styles.cameraTouchable}
             >
-              <CameraView 
-                ref={cameraRef}
-                style={styles.camera} 
-                facing={facing}
-              >
+      <CameraView 
+        ref={cameraRef}
+        style={styles.camera} 
+        facing={facing}
+      >
                 {/* Focus Indicator */}
                 {showFocusIndicator && (
                   <View 
@@ -375,18 +375,18 @@ export default function ARCameraScreen(): React.JSX.Element {
 
                 {/* Capture Button */}
                 <Animated.View style={[styles.captureButtonContainer, captureButtonAnimatedStyle]}>
-                  {isProcessing ? (
-                    <ActivityIndicator size="large" color="#fff" />
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.captureButton}
-                      onPress={captureAndRecognize}
-                      activeOpacity={0.8}
-                    >
+            {isProcessing ? (
+              <ActivityIndicator size="large" color="#fff" />
+            ) : (
+              <TouchableOpacity 
+                style={styles.captureButton}
+                onPress={captureAndRecognize}
+                activeOpacity={0.8}
+              >
                       <View style={styles.captureButtonOuter} />
                       <View style={styles.captureButtonInner} />
-                    </TouchableOpacity>
-                  )}
+              </TouchableOpacity>
+            )}
                 </Animated.View>
               </CameraView>
             </TouchableOpacity>
