@@ -23,8 +23,51 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useFavorites } from '@/context/FavoritesContext';
 import { safeJsonParse } from '@/utils/safeJson';
+import { RecognitionOutput } from '@/services/cameraRecognitionEngine';
 
 const { width, height } = Dimensions.get('window');
+
+// Type definition for restaurant data from route params
+// This can be a subset of RecognitionOutput or YelpBusiness
+interface RestaurantRouteData {
+  // Optional RecognitionOutput fields
+  ocr_text?: string;
+  confidence_score?: number;
+  google_match?: {
+    name?: string;
+    address?: string;
+    rating?: string | number;
+    images?: string[];
+    phone?: string;
+    website?: string;
+    location?: { lat: number; lng: number };
+    opening_hours?: string;
+    hours?: string;
+    price_level?: string | number;
+    contact?: string;
+  };
+  yelp_ai?: {
+    summary?: string;
+    review_highlights?: string;
+    popular_dishes?: string[];
+    categories?: string[];
+    yelp_rating?: number;
+    review_count?: number;
+    dietary_labels?: string[];
+    photos?: string[];
+    price?: string;
+    menu_items?: Array<{ name: string; description: string; price: string }>;
+  };
+  personalization?: {
+    is_favorite?: boolean;
+    cuisine_match_score?: number;
+    user_diet_match?: string;
+    match_score?: number;
+    match_reasons?: string[];
+    personalized_recommendations?: string[];
+    dietary_match?: string[];
+  };
+}
 
 export default function RestaurantDetailPage() {
   const router = useRouter();
@@ -32,7 +75,7 @@ export default function RestaurantDetailPage() {
   const { addFavorite, removeFavorite, isFavorite: checkIsFavorite } = useFavorites();
 
   // Parse the restaurant data from params (safely)
-  const restaurantData = safeJsonParse(params.data as string, null);
+  const restaurantData = safeJsonParse<RestaurantRouteData | null>(params.data as string, null);
   const restaurantId = params.id as string;
 
   const isFavorite = restaurantData ? checkIsFavorite(restaurantId) : false;
@@ -71,7 +114,8 @@ export default function RestaurantDetailPage() {
       if (isFavorite) {
         await removeFavorite(restaurantId);
       } else {
-        await addFavorite(restaurantData, restaurantId);
+        // Cast to RecognitionOutput - the addFavorite handles partial data
+        await addFavorite(restaurantData as unknown as RecognitionOutput, restaurantId);
       }
     } catch (error) {
       console.error('Failed to update favorite:', error);
@@ -243,7 +287,7 @@ export default function RestaurantDetailPage() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoIcon}>
-                  <Text style={styles.priceIcon}>{safeGoogleMatch.price_level || safeGoogleMatch.price || '$$'}</Text>
+                  <Text style={styles.priceIcon}>{safeGoogleMatch?.price_level || safeYelpAi?.price || '$$'}</Text>
                 </View>
                 <Text style={styles.infoLabel}>Price</Text>
                 <Text style={styles.infoValue}>Moderate</Text>

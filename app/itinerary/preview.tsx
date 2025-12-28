@@ -113,7 +113,7 @@ export default function ItineraryPreviewScreen() {
           <Text style={styles.comingSoonEmoji}>🚧</Text>
           <Text style={styles.comingSoonTitle}>Full Itinerary Coming Soon!</Text>
           <Text style={styles.comingSoonText}>
-            We're building the complete itinerary display with:
+            We&apos;re building the complete itinerary display with:
           </Text>
           <View style={styles.featuresList}>
             <Text style={styles.featureItem}>✓ Day-by-day meal plans</Text>
@@ -127,7 +127,7 @@ export default function ItineraryPreviewScreen() {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push('/(tabs)')}
+            onPress={() => router.push('/' as any)}
             activeOpacity={0.8}
           >
             <LinearGradient

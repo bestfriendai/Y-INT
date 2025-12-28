@@ -16,10 +16,15 @@ interface FavoriteRestaurant {
   savedAt: string;
   restaurantId: string;
   // Can be either RecognitionOutput or converted YelpBusiness format
+  // RecognitionOutput has string types, YelpBusiness has number types
+  ocr_text?: string;
   google_match?: {
     name: string;
     address?: string;
-    rating?: number;
+    rating?: string | number;
+    price_level?: string;
+    opening_hours?: string;
+    contact?: string;
     images?: string[];
     phone?: string;
     website?: string;
@@ -29,6 +34,9 @@ interface FavoriteRestaurant {
     summary?: string;
     review_highlights?: string;
     popular_dishes?: string[];
+    menu_items?: Array<{ name: string; description: string; price: string }>;
+    dietary_labels?: string[];
+    photos?: string[];
     categories?: string[];
     yelp_rating?: number;
     review_count?: number;
@@ -37,7 +45,11 @@ interface FavoriteRestaurant {
     match_score?: number;
     match_reasons?: string[];
     personalized_recommendations?: string[];
+    is_favorite?: boolean;
+    cuisine_match_score?: number;
+    user_diet_match?: string;
   };
+  confidence_score?: number;
   // For YelpBusiness format
   name?: string;
   image_url?: string;

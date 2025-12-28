@@ -45,8 +45,8 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const aiResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const aiResponseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeouts on unmount to prevent memory leaks
   useEffect(() => {

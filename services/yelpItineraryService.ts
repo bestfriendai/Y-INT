@@ -245,7 +245,7 @@ export class YelpItineraryService {
             const dish = match[1]
               .trim()
               .split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
               .join(' ');
             
             if (dish.length > 3 && dish.length < 40) {

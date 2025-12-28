@@ -401,7 +401,7 @@ export class SmartItineraryEngine {
 
     for (const [key, dish] of Object.entries(dishes)) {
       if (category.includes(key)) {
-        return dish;
+        return dish as string;
       }
     }
 
