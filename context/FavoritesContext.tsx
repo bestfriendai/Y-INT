@@ -1,12 +1,16 @@
 /**
  * Favorites Context
  * Global state management for favorite restaurants
+ * - Safe JSON parsing
+ * - Rollback on storage failure
+ * - O(1) lookup with Set
  */
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
 import { RecognitionOutput } from '@/services/cameraRecognitionEngine';
 import { YelpBusiness } from '@/services/yelpService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJsonParse, safeJsonStringify } from '@/utils/safeJson';
 
 interface FavoriteRestaurant {
   savedAt: string;
@@ -55,10 +59,11 @@ interface FavoriteRestaurant {
 
 interface FavoritesContextType {
   favorites: FavoriteRestaurant[];
-  addFavorite: (restaurant: RecognitionOutput | YelpBusiness, restaurantId: string) => void;
-  removeFavorite: (restaurantId: string) => void;
+  addFavorite: (restaurant: RecognitionOutput | YelpBusiness, restaurantId: string) => Promise<void>;
+  removeFavorite: (restaurantId: string) => Promise<void>;
   isFavorite: (restaurantId: string) => boolean;
   loadFavorites: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const STORAGE_KEY = '@favorite_restaurants';
@@ -67,21 +72,33 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // O(1) lookup Set - memoized from favorites array
+  const favoriteIds = useMemo(() => {
+    return new Set(favorites.map(fav => fav.restaurantId));
+  }, [favorites]);
 
   // Load favorites from storage
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
+    setIsLoading(true);
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = safeJsonParse<FavoriteRestaurant[]>(stored, []);
         setFavorites(parsed);
       }
     } catch (error) {
       console.error('Error loading favorites:', error);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const addFavorite = async (restaurant: RecognitionOutput | YelpBusiness, restaurantId: string) => {
+  const addFavorite = useCallback(async (restaurant: RecognitionOutput | YelpBusiness, restaurantId: string) => {
+    // Save previous state for rollback
+    const previousFavorites = [...favorites];
+
     let newFavorite: FavoriteRestaurant;
 
     // Check if it's a YelpBusiness (has image_url property)
@@ -121,44 +138,67 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       const recognitionOutput = restaurant as RecognitionOutput;
       newFavorite = {
         ...recognitionOutput,
-      savedAt: new Date().toISOString(),
-      restaurantId,
-    };
+        savedAt: new Date().toISOString(),
+        restaurantId,
+      };
     }
 
     const updated = [newFavorite, ...favorites.filter(fav => fav.restaurantId !== restaurantId)];
+
+    // Optimistic update
     setFavorites(updated);
-    
+
     // Persist to storage
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      const jsonString = safeJsonStringify(updated, '[]');
+      await AsyncStorage.setItem(STORAGE_KEY, jsonString);
+      console.log('❤️ Added to favorites:', newFavorite.google_match?.name || newFavorite.name);
     } catch (error) {
-      console.error('Error saving favorites:', error);
+      // ROLLBACK on failure
+      console.error('Error saving favorites, rolling back:', error);
+      setFavorites(previousFavorites);
+      throw error; // Re-throw so caller knows it failed
     }
+  }, [favorites]);
 
-    console.log('❤️ Added to favorites:', newFavorite.google_match?.name || newFavorite.name);
-  };
+  const removeFavorite = useCallback(async (restaurantId: string) => {
+    // Save previous state for rollback
+    const previousFavorites = [...favorites];
 
-  const removeFavorite = async (restaurantId: string) => {
     const updated = favorites.filter(fav => fav.restaurantId !== restaurantId);
+
+    // Optimistic update
     setFavorites(updated);
-    
+
     // Update storage
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      const jsonString = safeJsonStringify(updated, '[]');
+      await AsyncStorage.setItem(STORAGE_KEY, jsonString);
+      console.log('💔 Removed from favorites');
     } catch (error) {
-      console.error('Error removing favorite:', error);
+      // ROLLBACK on failure
+      console.error('Error removing favorite, rolling back:', error);
+      setFavorites(previousFavorites);
+      throw error; // Re-throw so caller knows it failed
     }
-    
-    console.log('💔 Removed from favorites');
-  };
+  }, [favorites]);
 
-  const isFavorite = (restaurantId: string) => {
-    return favorites.some(fav => fav.restaurantId === restaurantId);
-  };
+  // O(1) lookup using Set
+  const isFavorite = useCallback((restaurantId: string) => {
+    return favoriteIds.has(restaurantId);
+  }, [favoriteIds]);
+
+  const value = useMemo(() => ({
+    favorites,
+    addFavorite,
+    removeFavorite,
+    isFavorite,
+    loadFavorites,
+    isLoading,
+  }), [favorites, addFavorite, removeFavorite, isFavorite, loadFavorites, isLoading]);
 
   return (
-    <FavoritesContext.Provider value={{ favorites, addFavorite, removeFavorite, isFavorite, loadFavorites }}>
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );
@@ -171,4 +211,3 @@ export function useFavorites() {
   }
   return context;
 }
-

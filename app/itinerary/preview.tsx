@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '@/components/LucideIcons';
+import { safeJsonParse } from '@/utils/safeJson';
 
 export default function ItineraryPreviewScreen() {
   const router = useRouter();
@@ -84,7 +85,7 @@ export default function ItineraryPreviewScreen() {
                     const start = new Date(params.startDate as string);
                     const end = new Date(params.endDate as string);
                     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                    const meals = params.meals ? JSON.parse(params.meals as string).length : 3;
+                    const meals = safeJsonParse<string[]>(params.meals as string, ['breakfast', 'lunch', 'dinner']).length;
                     return (days || 5) * meals;
                   } catch {
                     return 15;

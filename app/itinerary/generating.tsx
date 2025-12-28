@@ -18,6 +18,7 @@ import Icon from '@/components/LucideIcons';
 import { yelpItineraryService } from '@/services/yelpItineraryService';
 import { smartItineraryEngine } from '@/services/aiItineraryEngine';
 import { supabaseItineraryService } from '@/services/supabaseItineraryService';
+import { safeJsonParse } from '@/utils/safeJson';
 
 const { width } = Dimensions.get('window');
 
@@ -135,9 +136,9 @@ export default function GeneratingItineraryScreen() {
 
   const parseParams = () => {
     try {
-      const dietary = params.dietary ? JSON.parse(params.dietary as string) : [];
-      const cuisines = params.cuisines ? JSON.parse(params.cuisines as string) : [];
-      const meals = params.meals ? JSON.parse(params.meals as string) : ['breakfast', 'lunch', 'dinner'];
+      const dietary = safeJsonParse<string[]>(params.dietary as string, []);
+      const cuisines = safeJsonParse<string[]>(params.cuisines as string, []);
+      const meals = safeJsonParse<string[]>(params.meals as string, ['breakfast', 'lunch', 'dinner']);
       
       const startDate = new Date(params.startDate as string);
       const endDate = new Date(params.endDate as string);

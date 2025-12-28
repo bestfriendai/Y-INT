@@ -22,6 +22,7 @@ import { ArrowLeft, Heart, Star, MapPin, Clock, Phone, Award } from 'lucide-reac
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useFavorites } from '@/context/FavoritesContext';
+import { safeJsonParse } from '@/utils/safeJson';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,8 +31,8 @@ export default function RestaurantDetailPage() {
   const params = useLocalSearchParams();
   const { addFavorite, removeFavorite, isFavorite: checkIsFavorite } = useFavorites();
 
-  // Parse the restaurant data from params
-  const restaurantData = params.data ? JSON.parse(params.data as string) : null;
+  // Parse the restaurant data from params (safely)
+  const restaurantData = safeJsonParse(params.data as string, null);
   const restaurantId = params.id as string;
 
   const isFavorite = restaurantData ? checkIsFavorite(restaurantId) : false;
@@ -44,7 +45,7 @@ export default function RestaurantDetailPage() {
     if (coords?.lat && coords?.lng) {
       const lat = coords.lat;
       const lng = coords.lng;
-      const iosUrl = `http://maps.apple.com/?ll=${lat},${lng}&q=${query}`;
+      const iosUrl = `https://maps.apple.com/?ll=${lat},${lng}&q=${query}`;
       const androidUrl = `geo:${lat},${lng}?q=${query}`;
       const url = Platform.select({
         ios: iosUrl,
@@ -63,13 +64,18 @@ export default function RestaurantDetailPage() {
     }
   };
 
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!restaurantData) return;
 
-    if (isFavorite) {
-      removeFavorite(restaurantId);
-    } else {
-      addFavorite(restaurantData, restaurantId);
+    try {
+      if (isFavorite) {
+        await removeFavorite(restaurantId);
+      } else {
+        await addFavorite(restaurantData, restaurantId);
+      }
+    } catch (error) {
+      console.error('Failed to update favorite:', error);
+      // TODO: Show user-friendly error toast
     }
   };
 
