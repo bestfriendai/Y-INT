@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,9 +22,16 @@ export default function ExplorePage() {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
     useEffect(() => {
-        loadFavorites();
-        loadRestaurants();
-    }, []);
+        const initialize = async () => {
+            try {
+                await loadFavorites();
+                await loadRestaurants();
+            } catch (error) {
+                console.error('Error initializing explore screen:', error);
+            }
+        };
+        initialize();
+    }, [loadFavorites]);
 
     const loadRestaurants = async () => {
         try {
@@ -92,15 +99,20 @@ export default function ExplorePage() {
         }
     };
 
-    const handleToggleFavorite = (restaurant: YelpBusiness) => {
-        if (isFavorite(restaurant.id)) {
-            removeFavorite(restaurant.id);
-        } else {
-            addFavorite(restaurant, restaurant.id);
+    const handleToggleFavorite = useCallback(async (restaurant: YelpBusiness) => {
+        try {
+            if (isFavorite(restaurant.id)) {
+                await removeFavorite(restaurant.id);
+            } else {
+                await addFavorite(restaurant, restaurant.id);
+            }
+        } catch (error) {
+            console.error('Failed to toggle favorite:', error);
+            // TODO: Show user-friendly error toast
         }
-    };
+    }, [isFavorite, removeFavorite, addFavorite]);
 
-    const handleRestaurantPress = (restaurant: YelpBusiness) => {
+    const handleRestaurantPress = useCallback((restaurant: YelpBusiness) => {
         // Prepare restaurant data for the detail page
         const restaurantData = {
             google_match: {
@@ -149,16 +161,16 @@ export default function ExplorePage() {
                 data: JSON.stringify(restaurantData),
             },
         });
-    };
+    }, [router]);
 
-    const formatDistance = (distance?: number): string => {
+    const formatDistance = useCallback((distance?: number): string => {
         if (!distance) return '';
         const miles = distance / 1609.34;
         if (miles < 1) {
             return `${Math.round(miles * 5280)}ft away`;
         }
         return `${miles.toFixed(1)}mi away`;
-    };
+    }, []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

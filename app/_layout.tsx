@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { SavedItinerariesProvider } from '@/context/SavedItinerariesContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -17,9 +18,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <FavoritesProvider>
-      <SavedItinerariesProvider>
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ErrorBoundary>
+        <FavoritesProvider>
+          <SavedItinerariesProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack
           screenOptions={{
             headerShown: false,
@@ -92,9 +94,10 @@ export default function RootLayout() {
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
-        </SavedItinerariesProvider>
-    </FavoritesProvider>
+            </ThemeProvider>
+          </SavedItinerariesProvider>
+        </FavoritesProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

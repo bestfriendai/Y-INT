@@ -48,9 +48,20 @@ export class GoogleVisionService {
         }
       );
 
-      const result = response.data.responses[0];
-      
-      if (!result.textAnnotations && !result.logoAnnotations) {
+      // Safely access response data with null checks
+      const responses = response?.data?.responses;
+      if (!responses || !Array.isArray(responses) || responses.length === 0) {
+        console.warn('Google Vision API returned empty response');
+        return {
+          fullText: '',
+          detectedTexts: [],
+          restaurantNameCandidates: [],
+          confidence: 0,
+        };
+      }
+
+      const result = responses[0];
+      if (!result || (!result.textAnnotations && !result.logoAnnotations)) {
         return {
           fullText: '',
           detectedTexts: [],

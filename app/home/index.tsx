@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Dimensions, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,9 +26,16 @@ export default function HomePage() {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
     useEffect(() => {
-        loadFavorites();
-        loadRestaurants();
-    }, []);
+        const initialize = async () => {
+            try {
+                await loadFavorites();
+                await loadRestaurants();
+            } catch (error) {
+                console.error('Error initializing home screen:', error);
+            }
+        };
+        initialize();
+    }, [loadFavorites]);
 
     const loadRestaurants = async () => {
         try {
@@ -146,57 +153,66 @@ export default function HomePage() {
         });
     };
 
-    const handleToggleFavorite = (restaurant: YelpBusiness) => {
-        if (isFavorite(restaurant.id)) {
-            removeFavorite(restaurant.id);
-        } else {
-            addFavorite(restaurant, restaurant.id);
-        }
-    };
-
-    // Get saved restaurants for "Saved" tab
-    const savedRestaurants = favorites
-        .filter(fav => fav.name || fav.google_match?.name)
-        .map(fav => {
-            if (fav.name) {
-                // Already in YelpBusiness format
-                return {
-                    id: fav.restaurantId,
-                    name: fav.name,
-                    image_url: fav.image_url || '',
-                    rating: fav.rating || 0,
-                    review_count: fav.review_count || 0,
-                    location: fav.location || { address1: '', city: '', state: '', country: '' },
-                    coordinates: fav.coordinates || { latitude: 0, longitude: 0 },
-                    categories: fav.categories || [],
-                    phone: fav.phone || '',
-                    price: fav.price,
-                } as YelpBusiness;
+    const handleToggleFavorite = useCallback(async (restaurant: YelpBusiness) => {
+        try {
+            if (isFavorite(restaurant.id)) {
+                await removeFavorite(restaurant.id);
             } else {
-                // Convert from RecognitionOutput format
-                return {
-                    id: fav.restaurantId,
-                    name: fav.google_match?.name || '',
-                    image_url: fav.google_match?.images?.[0] || '',
-                    rating: fav.google_match?.rating || 0,
-                    review_count: fav.yelp_ai?.review_count || 0,
-                    location: {
-                        address1: fav.google_match?.address?.split(',')[0] || '',
-                        city: fav.google_match?.address?.split(',')[1]?.trim() || '',
-                        state: fav.google_match?.address?.split(',')[2]?.trim() || '',
-                        country: 'US',
-                    },
-                    coordinates: fav.google_match?.location ? {
-                        latitude: fav.google_match.location.lat,
-                        longitude: fav.google_match.location.lng,
-                    } : { latitude: 0, longitude: 0 },
-                    categories: fav.yelp_ai?.categories?.map(c => ({ alias: c.toLowerCase(), title: c })) || [],
-                    phone: fav.google_match?.phone || '',
-                } as YelpBusiness;
+                await addFavorite(restaurant, restaurant.id);
             }
-        });
+        } catch (error) {
+            console.error('Failed to toggle favorite:', error);
+            // TODO: Show user-friendly error toast
+        }
+    }, [isFavorite, removeFavorite, addFavorite]);
 
-    const displayRestaurants = activeCategory === 'Saved' ? savedRestaurants : restaurants;
+    // Get saved restaurants for "Saved" tab - memoized for performance
+    const savedRestaurants = useMemo(() => {
+        return favorites
+            .filter(fav => fav.name || fav.google_match?.name)
+            .map(fav => {
+                if (fav.name) {
+                    // Already in YelpBusiness format
+                    return {
+                        id: fav.restaurantId,
+                        name: fav.name,
+                        image_url: fav.image_url || '',
+                        rating: fav.rating || 0,
+                        review_count: fav.review_count || 0,
+                        location: fav.location || { address1: '', city: '', state: '', country: '' },
+                        coordinates: fav.coordinates || { latitude: 0, longitude: 0 },
+                        categories: fav.categories || [],
+                        phone: fav.phone || '',
+                        price: fav.price,
+                    } as YelpBusiness;
+                } else {
+                    // Convert from RecognitionOutput format
+                    return {
+                        id: fav.restaurantId,
+                        name: fav.google_match?.name || '',
+                        image_url: fav.google_match?.images?.[0] || '',
+                        rating: fav.google_match?.rating || 0,
+                        review_count: fav.yelp_ai?.review_count || 0,
+                        location: {
+                            address1: fav.google_match?.address?.split(',')[0] || '',
+                            city: fav.google_match?.address?.split(',')[1]?.trim() || '',
+                            state: fav.google_match?.address?.split(',')[2]?.trim() || '',
+                            country: 'US',
+                        },
+                        coordinates: fav.google_match?.location ? {
+                            latitude: fav.google_match.location.lat,
+                            longitude: fav.google_match.location.lng,
+                        } : { latitude: 0, longitude: 0 },
+                        categories: fav.yelp_ai?.categories?.map(c => ({ alias: c.toLowerCase(), title: c })) || [],
+                        phone: fav.google_match?.phone || '',
+                    } as YelpBusiness;
+                }
+            });
+    }, [favorites]);
+
+    const displayRestaurants = useMemo(() => {
+        return activeCategory === 'Saved' ? savedRestaurants : restaurants;
+    }, [activeCategory, savedRestaurants, restaurants]);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

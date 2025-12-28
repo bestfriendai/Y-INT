@@ -160,7 +160,7 @@ export class CostEstimatorService {
         estimatedQuantity,
         valueScore,
         summary,
-        categories: business.categories.map(cat => cat.title),
+        categories: business.categories.map((cat: { alias: string; title: string }) => cat.title),
       };
     } catch (error: any) {
       // Only log unexpected errors

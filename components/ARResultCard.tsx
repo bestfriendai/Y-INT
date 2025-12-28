@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 export default function ARResultCard({ result }: ARResultCardProps): React.JSX.Element {
   const { google_match, yelp_ai, personalization, confidence_score } = result;
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
-  const restaurantId = google_match.place_id || `restaurant_${Date.now()}`;
+  const restaurantId = google_match.name || `restaurant_${Date.now()}`;
   const isFav = isFavorite(restaurantId);
 
   const handleToggleFavorite = () => {
@@ -161,7 +161,7 @@ export default function ARResultCard({ result }: ARResultCardProps): React.JSX.E
           {yelp_ai.review_highlights && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>What People Say</Text>
-              <Text style={styles.reviewText}>"{yelp_ai.review_highlights}"</Text>
+              <Text style={styles.reviewText}>&quot;{yelp_ai.review_highlights}&quot;</Text>
             </View>
           )}
 
