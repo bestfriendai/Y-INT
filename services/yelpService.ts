@@ -85,7 +85,12 @@ export class YelpService {
         params,
       });
 
-      return response.data.businesses || [];
+      // Safely access response data with null checks
+      const businesses = response?.data?.businesses;
+      if (!businesses || !Array.isArray(businesses)) {
+        return [];
+      }
+      return businesses;
     } catch (error: any) {
       // Only log unexpected errors (400/401/403/500+), not 404s
       const status = error?.response?.status;

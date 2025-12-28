@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 
 export interface Environment {
   YELP_API_KEY: string;
+  YELP_API_BASE_URL: string;
   GOOGLE_VISION_API_KEY: string;
   GOOGLE_MAPS_API_KEY: string;
   SUPABASE_URL: string;
@@ -31,6 +32,9 @@ const getEnvVars = (): Environment => {
       'YELP_API_KEY',
       extra?.YELP_API_KEY || process.env.EXPO_PUBLIC_YELP_API_KEY
     ),
+    YELP_API_BASE_URL: extra?.YELP_API_BASE_URL ||
+      process.env.EXPO_PUBLIC_YELP_API_BASE_URL ||
+      'https://api.yelp.com/v3',
     GOOGLE_VISION_API_KEY: validateEnvVar(
       'GOOGLE_VISION_API_KEY',
       extra?.GOOGLE_VISION_API_KEY || process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY
