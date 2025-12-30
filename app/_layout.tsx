@@ -8,6 +8,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { SavedItinerariesProvider } from '@/context/SavedItinerariesContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ToastProvider } from '@/components/Toast';
+import { NetworkStatus } from '@/components/NetworkStatus';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -19,84 +21,87 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <FavoritesProvider>
-          <SavedItinerariesProvider>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="camera" 
-          options={{ 
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-            gestureEnabled: false,
-          }} 
-        />
-        <Stack.Screen 
-          name="restaurant/[id]" 
-          options={{ 
-            headerShown: false,
-            presentation: 'card',
-            animation: 'slide_from_right',
-            gestureEnabled: true,
-            gestureDirection: 'horizontal',
-          }} 
-        />
-        <Stack.Screen 
-          name="chat/index" 
-          options={{ 
-            headerShown: false,
-            presentation: 'card',
-            animation: 'slide_from_right',
-            gestureEnabled: true,
-          }} 
-        />
-        <Stack.Screen 
-          name="itinerary/generating" 
-          options={{ 
-            headerShown: false,
-            presentation: 'fullScreenModal',
-            animation: 'fade',
-          }} 
-        />
-        <Stack.Screen 
-          name="itinerary/preview" 
-          options={{ 
-            headerShown: false,
-            presentation: 'card',
-            animation: 'slide_from_bottom',
-          }} 
-        />
-        <Stack.Screen 
-          name="itinerary/[trip_id]/index" 
-          options={{ 
-            headerShown: false,
-            presentation: 'card',
-            animation: 'slide_from_bottom',
-            gestureEnabled: true,
-          }} 
-        />
-        <Stack.Screen 
-          name="saved/index" 
-          options={{ 
-            headerShown: false,
-            presentation: 'card',
-            animation: 'slide_from_right',
-            gestureEnabled: true,
-          }} 
-        />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-            </ThemeProvider>
-          </SavedItinerariesProvider>
-        </FavoritesProvider>
+        <ToastProvider>
+          <FavoritesProvider>
+            <SavedItinerariesProvider>
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <NetworkStatus />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="camera"
+                    options={{
+                      headerShown: false,
+                      presentation: 'transparentModal',
+                      animation: 'fade',
+                      gestureEnabled: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="restaurant/[id]"
+                    options={{
+                      headerShown: false,
+                      presentation: 'card',
+                      animation: 'slide_from_right',
+                      gestureEnabled: true,
+                      gestureDirection: 'horizontal',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="chat/index"
+                    options={{
+                      headerShown: false,
+                      presentation: 'card',
+                      animation: 'slide_from_right',
+                      gestureEnabled: true,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="itinerary/generating"
+                    options={{
+                      headerShown: false,
+                      presentation: 'fullScreenModal',
+                      animation: 'fade',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="itinerary/preview"
+                    options={{
+                      headerShown: false,
+                      presentation: 'card',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="itinerary/[trip_id]/index"
+                    options={{
+                      headerShown: false,
+                      presentation: 'card',
+                      animation: 'slide_from_bottom',
+                      gestureEnabled: true,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="saved/index"
+                    options={{
+                      headerShown: false,
+                      presentation: 'card',
+                      animation: 'slide_from_right',
+                      gestureEnabled: true,
+                    }}
+                  />
+                  <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                </Stack>
+                <StatusBar style="auto" />
+              </ThemeProvider>
+            </SavedItinerariesProvider>
+          </FavoritesProvider>
+        </ToastProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );
